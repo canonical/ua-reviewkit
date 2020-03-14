@@ -1,0 +1,4 @@
+[4m]
+ blocksize=4m
+ blockalign=4k
+

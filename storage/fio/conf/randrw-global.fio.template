@@ -1,0 +1,11 @@
+[global]
+ name=__TESTNAME__
+ ioengine=libaio
+ size=60G
+ direct=1
+ sync=1
+ ramp_time=60
+ runtime=360
+ readwrite=randrw
+ iodepth=16
+ log_avg_msec=10

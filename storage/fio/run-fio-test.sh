@@ -1,9 +1,10 @@
 #!/bin/bash -eu
 TESTNAME=fio-perf-test
-jobdir_PREFIX=`date +%s`
+JOBDIR_PREFIX=`date +%s`
 OPT_DRY_RUN=false
-declare -a TEST_CLASSES=( randwrite )
-declare -a TEST_JOBS=( 4k 512k )
+
+readarray -t TEST_JOBS<<<"`ls conf| sed -r 's/^(.+)\.fio\.template$/\1/g;t;d'| grep -v global`"
+readarray -t TEST_CLASSES<<<"`ls conf| sed -r 's/^(.+)-global\.fio\.template$/\1/g;t;d'`"
 
 usage ()
 {
@@ -11,12 +12,20 @@ cat << EOF
 USAGE: `basename $0` OPTIONS TEST
 
 OPTIONS:
-    -l|--label
-        Job label. Will use timestamp if not provided.
-
     -h|--help
         Prints this message
+    -l|--label
+        Job label. Will use timestamp if not provided.
+    --job
+        Test job to run, Available options are:
+`echo "${TEST_JOBS[@]}"| xargs -l -I{} echo -e "\t - {}"`
 
+        If no job is specified then all will be run.
+    --class
+        Test class to run, Available options are:
+`echo "${TEST_CLASSES[@]}"| xargs -l -I{} echo -e "\t - {}"`
+
+        If no class is specified then all will be run.
     --dry-run
         Do not execute the test. Will generate the config and print the command.
 
@@ -36,8 +45,16 @@ while (($#)); do
            usage
            exit 0
            ;;
+        --job)
+           TEST_JOBS=( "$2" )
+           shift
+           ;;
+        --class)
+           TEST_CLASSES=( "$2" )
+           shift
+           ;;
         -l|--label)
-           jobdir_PREFIX="$2"
+           JOBDIR_PREFIX="$2"
            shift
            ;;
         *)
@@ -67,18 +84,23 @@ cat << EOF
 EOF
 }
 
+answer=y
+((${#TEST_CLASSES[@]} == 1)) || read -p "No class specified so running all - OK? [y/N]" answer
+[ "${answer,,}" = "y" ] || { echo "Aborting."; exit; }
+((${#TEST_JOBS[@]} == 1)) || read -p "No job specified so running all - OK? [y/N]" answer
+[ "${answer,,}" = "y" ] || { echo "Aborting."; exit; }
 
 for class in ${TEST_CLASSES[@]}; do
     global=${class}-global.fio.template
     for job in ${TEST_JOBS[@]}; do
-        job=${job}.fio.template
-        joblabel=${TESTNAME}-${jobdir_PREFIX}-$job
+        job_template=${job}.fio.template
+        joblabel=${TESTNAME}-${JOBDIR_PREFIX}-$class-$job
         jobdir=${joblabel}.results
         mkdir $jobdir
 
         config=${class}-${job}.fio
         cat conf/$global > $jobdir/$config
-        cat conf/$job >> $jobdir/$config
+        cat conf/$job_template >> $jobdir/$config
         sed -r -i "s/__TESTNAME__/$TESTNAME/g" $jobdir/$config
 
         header $TESTNAME $job $jobdir

@@ -7,8 +7,8 @@ NO_CLEANUP=false
 declare -a TEST_JOBS=()
 declare -a TEST_CLASSES=()
 
-readarray -t _TEST_JOBS<<<"`ls conf| sed -r 's/^(.+)\.fio\.template$/\1/g;t;d'| grep -v global`"
-readarray -t _TEST_CLASSES<<<"`ls conf| sed -r 's/^(.+)-global\.fio\.template$/\1/g;t;d'`"
+readarray _TEST_JOBS<<<"`ls conf| sed -r 's/^(.+)\.fio\.template$/\1/g;t;d'| grep -v global`"
+readarray _TEST_CLASSES<<<"`ls conf| sed -r 's/^(.+)-global\.fio\.template$/\1/g;t;d'`"
 
 usage ()
 {
@@ -140,11 +140,11 @@ for class in ${TEST_CLASSES[@]}; do
                 echo "## DRY-RUN ##"
                 echo "fio $config --write_lat_log=$joblabel --write_bw_log=$joblabel --write_iops_log=$joblabel"
                 # delete io file to avoid running out of space for subsequent runs.
-                $NO_CLEANUP || rm ${job}.0.0
             else
                 $FORCE_YES || read -p "Run test? [Y/n]" answer
                 [ "${answer,,}" = "n" ] || \
                     fio $config --write_lat_log=$joblabel --write_bw_log=$joblabel --write_iops_log=$joblabel
+                $NO_CLEANUP || rm ${job}.0.0
             fi
         )
         footer

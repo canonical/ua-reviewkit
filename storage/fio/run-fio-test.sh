@@ -2,9 +2,12 @@
 TESTNAME=fio-perf-test
 JOBDIR_PREFIX=`date +%s`
 OPT_DRY_RUN=false
+FORCE_YES=false
+declare -a TEST_JOBS=()
+declare -a TEST_CLASSES=()
 
-readarray -t TEST_JOBS<<<"`ls conf| sed -r 's/^(.+)\.fio\.template$/\1/g;t;d'| grep -v global`"
-readarray -t TEST_CLASSES<<<"`ls conf| sed -r 's/^(.+)-global\.fio\.template$/\1/g;t;d'`"
+readarray -t _TEST_JOBS<<<"`ls conf| sed -r 's/^(.+)\.fio\.template$/\1/g;t;d'| grep -v global`"
+readarray -t _TEST_CLASSES<<<"`ls conf| sed -r 's/^(.+)-global\.fio\.template$/\1/g;t;d'`"
 
 usage ()
 {
@@ -18,16 +21,24 @@ OPTIONS:
         Job label. Will use timestamp if not provided.
     --job
         Test job to run, Available options are:
-`echo "${TEST_JOBS[@]}"| xargs -l -I{} echo -e "\t - {}"`
+`echo "${_TEST_JOBS[@]}"| xargs -l -I{} echo -e "\t - {}"`
 
-        If no job is specified then all will be run.
+        Can be specified multiple times.
+
+        If no job is specified then all will be run. If you want avoid being
+        asked for confirmation that you mean all then set this to "all".
     --class
         Test class to run, Available options are:
-`echo "${TEST_CLASSES[@]}"| xargs -l -I{} echo -e "\t - {}"`
+`echo "${_TEST_CLASSES[@]}"| xargs -l -I{} echo -e "\t - {}"`
 
-        If no class is specified then all will be run.
+        Can be specified multiple times.
+
+        If no class is specified then all will be run. If you want avoid being
+        asked for confirmation that you mean all then set this to "all".
     --dry-run
         Do not execute the test. Will generate the config and print the command.
+    --yes
+        Answer yes to all questions (beware!)
 
 TEST:
     Name of test to run. Must correspond to existing configs
@@ -46,16 +57,19 @@ while (($#)); do
            exit 0
            ;;
         --job)
-           TEST_JOBS=( "$2" )
+           TEST_JOBS+=( "$2" )
            shift
            ;;
         --class)
-           TEST_CLASSES=( "$2" )
+           TEST_CLASSES+=( "$2" )
            shift
            ;;
         -l|--label)
            JOBDIR_PREFIX="$2"
            shift
+           ;;
+        --yes)
+           FORCE_YES=true
            ;;
         *)
            TESTNAME="$1"
@@ -85,10 +99,17 @@ EOF
 }
 
 answer=y
-((${#TEST_CLASSES[@]} == 1)) || read -p "No class specified so running all - OK? [y/N]" answer
+if ((${#TEST_CLASSES[@]}==0)); then
+    read -p "All classes (${#_TEST_CLASSES[@]}) will be run - OK? (use '--job all' to avoid this message) [y/N] " answer
+fi
 [ "${answer,,}" = "y" ] || { echo "Aborting."; exit; }
-((${#TEST_JOBS[@]} == 1)) || read -p "No job specified so running all - OK? [y/N]" answer
+if ((${#TEST_JOBS[@]}==0)); then
+    read -p "All jobs (${#_TEST_JOBS[@]}) will be run - OK? (use '--class all' to avoid this message) [y/N] " answer
+fi
 [ "${answer,,}" = "y" ] || { echo "Aborting."; exit; }
+
+{ ((${#TEST_CLASSES[@]}==0)) || [ "${TEST_CLASSES[0]}" = "all" ]; } && TEST_CLASSES=( ${_TEST_CLASSES[@]} )
+{ ((${#TEST_JOBS[@]}==0)) || [ "${TEST_JOBS[0]}" = "all" ]; } && TEST_JOBS=( ${_TEST_JOBS[@]} )
 
 for class in ${TEST_CLASSES[@]}; do
     global=${class}-global.fio.template
@@ -112,7 +133,7 @@ for class in ${TEST_CLASSES[@]}; do
                 echo "## DRY-RUN ##"
                 echo "fio $config --write_lat_log=$joblabel --write_bw_log=$joblabel --write_iops_log=$joblabel"
             else
-                read -p "Run test? [Y/n]" answer
+                $FORCE_YES || read -p "Run test? [Y/n]" answer
                 [ "${answer,,}" = "n" ] || \
                     fio $config --write_lat_log=$joblabel --write_bw_log=$joblabel --write_iops_log=$joblabel
             fi

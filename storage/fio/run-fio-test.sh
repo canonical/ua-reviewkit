@@ -3,6 +3,7 @@ TESTNAME=fio-perf-test
 JOBDIR_PREFIX=`date +%s`
 OPT_DRY_RUN=false
 FORCE_YES=false
+NO_CLEANUP=false
 declare -a TEST_JOBS=()
 declare -a TEST_CLASSES=()
 
@@ -38,7 +39,10 @@ OPTIONS:
     --dry-run
         Do not execute the test. Will generate the config and print the command.
     --yes
-        Answer yes to all questions (beware!)
+        Run tests non-interactively.
+    --no-cleanup
+        Don't delete the fio IO file after tests. This is done by default to
+        avoid running out of space for future tests.
 
 TEST:
     Name of test to run. Must correspond to existing configs
@@ -50,31 +54,34 @@ EOF
 while (($#)); do
     case $1 in
         --dry-run)
-           OPT_DRY_RUN=true
-           ;;
+            OPT_DRY_RUN=true
+            ;;
         -h|--help)
-           usage
-           exit 0
-           ;;
+            usage
+            exit 0
+            ;;
         --job)
-           TEST_JOBS+=( "$2" )
-           shift
-           ;;
+            TEST_JOBS+=( "$2" )
+            shift
+            ;;
         --class)
-           TEST_CLASSES+=( "$2" )
-           shift
-           ;;
+            TEST_CLASSES+=( "$2" )
+            shift
+            ;;
         -l|--label)
-           JOBDIR_PREFIX="$2"
-           shift
-           ;;
+            JOBDIR_PREFIX="$2"
+            shift
+            ;;
         --yes)
-           FORCE_YES=true
-           ;;
+            FORCE_YES=true
+            ;;
+        --no-cleanup)
+            NO_CLEANUP=true
+            ;;
         *)
-           TESTNAME="$1"
-           shift
-           ;;
+            TESTNAME="$1"
+            shift
+            ;;
     esac
     shift
 done
@@ -132,6 +139,8 @@ for class in ${TEST_CLASSES[@]}; do
             if $OPT_DRY_RUN; then
                 echo "## DRY-RUN ##"
                 echo "fio $config --write_lat_log=$joblabel --write_bw_log=$joblabel --write_iops_log=$joblabel"
+                # delete io file to avoid running out of space for subsequent runs.
+                $NO_CLEANUP || rm ${job}.0.0
             else
                 $FORCE_YES || read -p "Run test? [Y/n]" answer
                 [ "${answer,,}" = "n" ] || \

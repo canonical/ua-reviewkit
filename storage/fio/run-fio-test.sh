@@ -118,6 +118,9 @@ fi
 { ((${#TEST_CLASSES[@]}==0)) || [ "${TEST_CLASSES[0]}" = "all" ]; } && TEST_CLASSES=( ${_TEST_CLASSES[@]} )
 { ((${#TEST_JOBS[@]}==0)) || [ "${TEST_JOBS[0]}" = "all" ]; } && TEST_JOBS=( ${_TEST_JOBS[@]} )
 
+
+logfile=`pwd`/${TESTNAME}-${JOBDIR_PREFIX}.log
+echo "Logging to $logfile"
 for class in ${TEST_CLASSES[@]}; do
     global=${class}-global.fio.template
     for job in ${TEST_JOBS[@]}; do
@@ -131,7 +134,7 @@ for class in ${TEST_CLASSES[@]}; do
         cat conf/$job_template >> $jobdir/$config
         sed -r -i "s/__TESTNAME__/$TESTNAME/g" $jobdir/$config
 
-        header $TESTNAME $job $jobdir
+        header $TESTNAME $job $jobdir | tee -a $logfile
         (
             cd $jobdir
             echo "Running test: $config"
@@ -144,10 +147,10 @@ for class in ${TEST_CLASSES[@]}; do
                 $FORCE_YES || read -p "Run test? [Y/n]" answer
                 [ "${answer,,}" = "n" ] || \
                     fio $config --write_lat_log=$joblabel --write_bw_log=$joblabel --write_iops_log=$joblabel
-                $NO_CLEANUP || rm ${job}.0.0
+                $NO_CLEANUP || rm -f ${job}.0.0
             fi
-        )
-        footer
+        ) | tee -a $logfile
+        footer | tee -a $logfile
 done
 
 done

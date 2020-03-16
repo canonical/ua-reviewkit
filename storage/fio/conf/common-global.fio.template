@@ -7,5 +7,4 @@ direct=1
 sync=1
 ramp_time=30
 runtime=300
-iodepth=16
 log_avg_msec=10

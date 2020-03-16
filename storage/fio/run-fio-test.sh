@@ -149,7 +149,7 @@ for class in ${TEST_CLASSES[@]}; do
                 $FORCE_YES || read -p "Run test? [Y/n]" answer
                 [ "${answer,,}" = "n" ] || \
                     fio $config --write_lat_log=$joblabel --write_bw_log=$joblabel --write_iops_log=$joblabel
-                $NO_CLEANUP || rm -f ${job}.0.0
+                $NO_CLEANUP || rm -f ${job}.0.*
             fi
         ) | tee -a $logfile
         footer | tee -a $logfile

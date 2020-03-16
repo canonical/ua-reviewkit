@@ -1,4 +1,2 @@
 [512k]
  blocksize=512k
- blockalign=4k
-

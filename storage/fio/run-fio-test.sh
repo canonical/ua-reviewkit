@@ -8,7 +8,7 @@ declare -a TEST_JOBS=()
 declare -a TEST_CLASSES=()
 
 readarray _TEST_JOBS<<<"`ls conf| sed -r 's/^(.+)\.fio\.template$/\1/g;t;d'| grep -v global`"
-readarray _TEST_CLASSES<<<"`ls conf| sed -r 's/^(.+)-global\.fio\.template$/\1/g;t;d'`"
+readarray _TEST_CLASSES<<<"`ls conf| sed -r 's/^(.+)-global\.fio\.template$/\1/g;t;d'| egrep -v 'common'`"
 
 usage ()
 {
@@ -133,6 +133,8 @@ for class in ${TEST_CLASSES[@]}; do
         cat conf/$global > $jobdir/$config
         cat conf/$job_template >> $jobdir/$config
         sed -r -i "s/__TESTNAME__/$TESTNAME/g" $jobdir/$config
+        # copy common global config into job dir
+        cp conf/common-global.fio.template $jobdir/common-global.fio
 
         header $TESTNAME $job $jobdir | tee -a $logfile
         (

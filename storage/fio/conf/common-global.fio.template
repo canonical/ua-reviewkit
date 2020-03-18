@@ -2,7 +2,6 @@ ioengine=libaio
 size=60G
 filesize=32m-512m
 nrfiles=240  # (60g/512m)*2 i.e. max possible data * 2 since its a uniform distribution between the two this should give us ~=size
-fallocate=none # don't pre-allocate files since this will skew results
 direct=1
 sync=1
 ramp_time=30

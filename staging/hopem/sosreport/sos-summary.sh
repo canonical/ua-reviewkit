@@ -200,9 +200,16 @@ if $ctg_storage; then
     fi
     
     echo "bcache-info:" >> $f_output
-    out="`grep . sos_commands/block/ls_-lanR_.sys.block| egrep 'bcache|nvme'| sed -r 's/.+[[:digit:]\:]+\s+([[:alnum:]]+)\s+.+/\1/g'`"
-    [ -n "$out" ] || out="none"
-    echo "$out"| xargs -l -I{} echo "  - {}" >> $f_output
+    readarray -t bcacheinfo<<<"`grep . sos_commands/block/ls_-lanR_.sys.block| egrep 'bcache|nvme'| sed -r 's/.+[[:digit:]\:]+\s+([[:alnum:]]+)\s+.+/\1/g'`"
+    ((${#bcacheinfo[@]})) || bcacheinfo=( "none" )
+    block_root=sos_commands/block/udevadm_info_.dev.
+    for out in ${bcacheinfo[@]}; do
+        if [ -e "${block_root}$out" ]; then
+            echo "$out (`grep ' disk/by-dname' ${block_root}$out| sed -r 's,.+/(.+),\1,g'`)"
+        else
+            echo $out
+        fi
+    done| xargs -l -I{} echo "  - {}" >> $f_output
 fi
 
 if $ctg_juju; then

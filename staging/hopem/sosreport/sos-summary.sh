@@ -139,7 +139,8 @@ fi
 if $ctg_openstack; then
     echo -e "openstack:" >> $f_output
 
-    services=(
+    # TODO: keep this list up-to-date with services we care about in the context of openstack
+    declare -a services=(
     aodh
     apache
     barbican
@@ -165,13 +166,22 @@ if $ctg_openstack; then
     qemu-system-x86_64
     )
     if [ -r "ps" ]; then
-        hash=`md5sum $f_output`
-        ( for svc in ${services[@]}; do
-            out="`sed -r \"s/.*(${svc}[[:alnum:]\-]*)\s+.+/\1/g;t;d\" ps| sort| uniq -c| sed -r 's/^\s+/  /g'`"
-            [ -z "$out" ] && continue
-            echo "$out"
-        done ) | sort -k 1  >> $f_output
-        [ "$hash" = "`md5sum $f_output`" ] && echo "  none" >> $f_output
+        declare -A openstack_info=()
+        for svc in ${services[@]}; do
+            readarray -t out<<<"`sed -r \"s/.*(${svc}[[:alnum:]\-]*)\s+.+/\1/g;t;d\" ps`"
+            ((${#out[@]}==0)) || [ -z "${out[0]}" ] && continue
+            for e in ${out[@]}; do
+                n=${openstack_info[$e]:-0}
+                openstack_info[$e]=$((n+1))
+            done
+        done
+        if ((${#openstack_info[@]})); then
+            for e in ${!openstack_info[@]}; do
+                echo "  - $e (${openstack_info[$e]})"
+            done| sort -k 3 >> $f_output
+        else
+            echo "  - none" >> $f_output
+        fi
     else
         echo "  ps not found - skipping openstack service detection" >> $f_output
     fi
@@ -189,10 +199,10 @@ if $ctg_storage; then
     if [ -r "ps" ]; then
         hash=`md5sum $f_output`
         ( for svc in ${services[@]}; do
-            out="`sed -r \"s/.*(${svc}[[:alnum:]\-]*)\s+.+/\1/g;t;d\" ps| sort| uniq -c| sed -r 's/^\s+/  /g'`"
+            out="`sed -r \"s/.*(${svc}[[:alnum:]\-]*)\s+.+/\1/g;t;d\" ps| sort| uniq| sed -r 's/^\s+/  /g'`"
             id="`sed -r \"s/.*(${svc}[[:alnum:]\-]*)\s+.+--id\s+([[:digit:]]+)\s+.+/\2/g;t;d\" ps| tr -s '\n' ','| sort| sed -r -e 's/^\s+/  /g' -e 's/,$//g'`"
             [ -z "$out" ] && continue
-            echo "$out ($id)"
+            echo "  - $out ($id)"
         done ) >> $f_output
         [ "$hash" = "`md5sum $f_output`" ] && echo "  - none" >> $f_output
     else
@@ -213,12 +223,27 @@ if $ctg_storage; then
 fi
 
 if $ctg_juju; then
-    echo -e "juju-units:" >> $f_output
     if [ -d "var/log/juju" ]; then
-        out="`find var/log/juju -name unit-\*| sed -r 's,.+unit-([[:alpha:]\-]+-[[:digit:]]+).*.log.*,\1,g;t;d'| sort -u| xargs -l -I{} echo \"  - {}\"`"
-        [ -z "$out" ] && echo "  - none" || echo "$out" >> $f_output
-    else
-        echo "  - none" >> $f_output
+        echo -e "juju-units:" >> $f_output
+        readarray -t units<<<"`find var/log/juju -name unit-\*| sed -r 's,.+unit-([[:alpha:]\-]+-[[:digit:]]+).*.log.*,\1,g;t;d'| sort -u`"
+        declare -a juju_info_local=()
+        declare -a juju_info_nonlocal=()
+        for unit in ${units[@]}; do
+            if `grep -q "unit-${unit}" ps`; then
+                juju_info_local+=( "${unit}\n" )
+            else
+                juju_info_nonlocal+=( "${unit}\n" )
+            fi
+        done
+        if (("${#units[@]}"==0)) || [ -z "${units[0]}" ]; then
+            echo -e "juju-units:" >> $f_output
+            echo "  - none" >> $f_output
+        else
+            echo -e "  local:" >> $f_output
+            echo -e ${juju_info_local[@]}| sort -u| xargs -l -I{} echo "  - {}" >> $f_output
+            echo -e "  non-local (e.g. lxd):" >> $f_output
+            echo -e ${juju_info_nonlocal[@]}| sort -u| xargs -l -I{} echo "  - {}" >> $f_output
+        fi
     fi
 fi
 

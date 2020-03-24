@@ -168,7 +168,7 @@ if $ctg_openstack; then
     if [ -r "ps" ]; then
         declare -A openstack_info=()
         for svc in ${services[@]}; do
-            readarray -t out<<<"`sed -r \"s/.*(${svc}[[:alnum:]\-]*)\s+.+/\1/g;t;d\" ps`"
+            readarray -t out<<<"`sed -r -e \"s/.+(${svc}[[:alnum:]\-]*)\s+.+/\1/g;t;d\" ps`"
             ((${#out[@]}==0)) || [ -z "${out[0]}" ] && continue
             for e in ${out[@]}; do
                 n=${openstack_info[$e]:-0}
@@ -178,7 +178,7 @@ if $ctg_openstack; then
         if ((${#openstack_info[@]})); then
             for e in ${!openstack_info[@]}; do
                 echo "  - $e (${openstack_info[$e]})"
-            done| sort -k 3 >> $f_output
+            done| sort -k 2 >> $f_output
         else
             echo "  - none" >> $f_output
         fi

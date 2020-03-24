@@ -180,7 +180,7 @@ if $ctg_openstack; then
                 echo "  - $e (${openstack_info[$e]})"
             done| sort -k 2 >> $f_output
         else
-            echo "  - none" >> $f_output
+            echo "  - null" >> $f_output
         fi
     else
         echo "  ps not found - skipping openstack service detection" >> $f_output
@@ -204,18 +204,18 @@ if $ctg_storage; then
             [ -z "$out" ] && continue
             echo "  - $out ($id)"
         done ) >> $f_output
-        [ "$hash" = "`md5sum $f_output`" ] && echo "  - none" >> $f_output
+        [ "$hash" = "`md5sum $f_output`" ] && echo "  - null" >> $f_output
     else
         echo "  ps not found - skipping ceph service detection" >> $f_output
     fi
     
     echo "bcache-info:" >> $f_output
     readarray -t bcacheinfo<<<"`grep . sos_commands/block/ls_-lanR_.sys.block| egrep 'bcache|nvme'| sed -r 's/.+[[:digit:]\:]+\s+([[:alnum:]]+)\s+.+/\1/g'`"
-    ((${#bcacheinfo[@]})) || bcacheinfo=( "none" )
+    ((${#bcacheinfo[@]})) || bcacheinfo=( "null" )
     block_root=sos_commands/block/udevadm_info_.dev.
     for out in ${bcacheinfo[@]}; do
         if [ -e "${block_root}$out" ]; then
-            echo "$out (`grep ' disk/by-dname' ${block_root}$out| sed -r 's,.+/(.+),\1,g'`)"
+            echo "/dev/$out (`grep ' disk/by-dname' ${block_root}$out| sed -r 's,.+/(.+),\1,g'`)"
         else
             echo $out
         fi
@@ -225,23 +225,31 @@ fi
 if $ctg_juju; then
     if [ -d "var/log/juju" ]; then
         echo -e "juju-units:" >> $f_output
-        readarray -t units<<<"`find var/log/juju -name unit-\*| sed -r 's,.+unit-([[:alpha:]\-]+-[[:digit:]]+).*.log.*,\1,g;t;d'| sort -u`"
+
+        readarray -t ps_units<<<"`egrep unit-\* ps| sed -r 's,.+unit-([[:alpha:]\-]+-[[:digit:]]+).*,\1,g;t;d'| sort -u`"
+        readarray -t log_units<<<"`find var/log/juju -name unit-\*| sed -r 's,.+unit-([[:alpha:]\-]+-[[:digit:]]+).*.log.*,\1,g;t;d'| sort -u`"
+
         declare -a juju_info_local=()
         declare -a juju_info_nonlocal=()
-        for unit in ${units[@]}; do
-            if `grep -q "unit-${unit}" ps`; then
+        
+        for unit in ${ps_units[@]}; do
+            if `echo "${log_units[@]}"| egrep -q "\s?${unit}\s?"`; then
                 juju_info_local+=( "${unit}\n" )
             else
                 juju_info_nonlocal+=( "${unit}\n" )
             fi
         done
-        if (("${#units[@]}"==0)) || [ -z "${units[0]}" ]; then
+
+        if (("${#ps_units[@]}"==0)) || [ -z "${ps_units[0]}" ]; then
             echo -e "juju-units:" >> $f_output
-            echo "  - none" >> $f_output
+            echo "  - null" >> $f_output
         else
             echo -e "  local:" >> $f_output
             echo -e ${juju_info_local[@]}| sort -u| xargs -l -I{} echo "  - {}" >> $f_output
             echo -e "  non-local (e.g. lxd):" >> $f_output
+            if (("${#juju_info_nonlocal[@]}"==0)) || [ -z "${juju_info_nonlocal[0]}" ]; then
+                juju_info_nonlocal=( null )
+            fi
             echo -e ${juju_info_nonlocal[@]}| sort -u| xargs -l -I{} echo "  - {}" >> $f_output
         fi
     fi

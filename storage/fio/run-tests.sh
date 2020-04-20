@@ -187,12 +187,12 @@ for class in ${TEST_CLASSES[@]}; do
                 else
                     echo -e "\n# Test Not Run #"
                 fi
-                $NO_CLEANUP || rm -f ${job}.0.*
             fi
         ) | tee -a $logfile
         footer | tee -a $logfile
     done
 done
+$NO_CLEANUP || rm -rf $results_dir/iofiles
 
 if ! $NO_TARBALL && ! $OPT_DRY_RUN; then
     tar -czf ${results_dir}.tgz $results_dir

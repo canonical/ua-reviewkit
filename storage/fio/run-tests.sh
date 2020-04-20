@@ -143,7 +143,7 @@ if ((${#TEST_JOBS[@]}==0)); then
 else
     for j in ${TEST_JOBS[@]}; do
         `in_array "$j" ${AVAILABLE_JOBS[@]}` && continue || true
-        [ "$c" = "$WILDCARD" ] && continue || true
+        [ "$j" = "$WILDCARD" ] && continue || true
         echo "ERROR: unknown job '$j'"
         exit 1
     done
@@ -154,6 +154,7 @@ fi
 
 results_dir=${TESTNAME}-${JOBDIR_PREFIX}
 mkdir $results_dir
+mkdir -p $results_dir/iofiles
 logfile=`pwd`/$results_dir/${TESTNAME}-${JOBDIR_PREFIX}.log
 echo "Logging to $logfile"
 for class in ${TEST_CLASSES[@]}; do
@@ -170,19 +171,18 @@ for class in ${TEST_CLASSES[@]}; do
         sed -r -i "s/__TESTNAME__/$TESTNAME/g" $results_dir/$jobdir/$config
         # copy common global config into job dir
         cp conf/common-global.fio.template $results_dir/$jobdir/common-global.fio
+        sed -r -i "s/__TESTNAME__/${TESTNAME}-${JOBDIR_PREFIX}/g" $results_dir/$jobdir/common-global.fio
 
         header $TESTNAME $job $jobdir | tee -a $logfile
         (
             cd $results_dir/$jobdir
-            echo "Running test: $config"
-            cat $config
             if $OPT_DRY_RUN; then
                 echo "## DRY-RUN ##"
                 echo "fio $config --write_lat_log=$joblabel --write_bw_log=$joblabel --write_iops_log=$joblabel"
                 # delete io file to avoid running out of space for subsequent runs.
             else
                 $FORCE_YES || read -p "Run test? [Y/n]" answer
-                if [ "${answer,,}" = "y" ]; then
+                if [ -z "$answer" ] || [ "${answer,,}" = "y" ]; then
                     fio $config --write_lat_log=$joblabel --write_bw_log=$joblabel --write_iops_log=$joblabel
                 else
                     echo -e "\n# Test Not Run #"

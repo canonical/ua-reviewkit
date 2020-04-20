@@ -1,6 +1,8 @@
 ioengine=libaio
 size=60G
 filesize=32m-512m
+directory=../iofiles
+filename_format="__TESTNAME__.$filenum"
 nrfiles=240  # (60g/512m)*2 i.e. max possible data * 2 since its a uniform distribution between the two this should give us ~=size
 direct=1
 sync=1

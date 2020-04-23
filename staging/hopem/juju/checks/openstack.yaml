@@ -1,0 +1,165 @@
+# See README_check_definitions.md
+checks:
+  mysql-percona:
+    charm: "cs:.*percona-cluster[-]?[0-9]*"
+    assertions:
+      ha:
+        assert_ha:
+          type: application
+      innodb-buffer-pool-size:
+        gte:
+          type: config
+          source: local
+          value: 6G
+      max-connections:
+        gte:
+          type: config
+          source: local
+          value: 2000
+  mysql-innodb-cluster:
+    charm: "cs:.*mysql-innodb-cluster[-]?[0-9]*"
+    assertions:
+      ha:
+        assert_ha:
+          type: application
+      innodb-buffer-pool-size:
+        gte:
+          type: config
+          source: local
+          value: 6G
+      max-connections:
+        gte:
+          type: config
+          source: local
+          value: 2000
+  rabbitmq-server:
+    charm: "cs:.*rabbitmq-server[-]?[0-9]*"
+    assertions:
+      ha:
+        assert_ha:
+          type: application
+      cluster-partition-handling:
+        eq:
+          type: config
+          source: local
+          value: "ignore"
+  etcd:
+    charm: "cs:.*etcd[-]?[0-9]*"
+    assertions:
+      ha:
+        assert_ha:
+          type: application
+  barbican:
+    charm: "cs:.*barbican[-]?[0-9]*"
+    assertions:
+      ha:
+        assert_ha:
+          type: application
+  ceph-mon:
+    charm: "cs:.*ceph-mon[-]?[0-9]*"
+    assertions:
+      ha:
+        assert_ha:
+          type: application
+  ceph-osd:
+    charm: "cs:.*ceph-mon[-]?[0-9]*"
+    assertions:
+  ceph-proxy:
+    charm: "cs:.*ceph-proxy[-]?[0-9]*"
+    assertions:
+  ceph-radosgw:
+    charm: "cs:.*ceph-radosgw[-]?[0-9]*"
+    assertions:
+  cinder:
+    charm: "cs:.*cinder[-]?[0-9]*"
+    assertions:
+      ha:
+        assert_ha:
+          type: application
+  designate:
+    charm: "cs:.*designate[-]?[0-9]*"
+    assertions:
+      ha:
+        assert_ha:
+          type: application
+  glance:
+    charm: "cs:.*glance[-]?[0-9]*"
+    assertions:
+      ha:
+        assert_ha:
+          type: application
+  gnocchi:
+    charm: "cs:.*gnocchi[-]?[0-9]*"
+    assertions:
+      ha:
+        assert_ha:
+          type: application
+  heat:
+    charm: "cs:.*heat[-]?[0-9]*"
+    assertions:
+      ha:
+        assert_ha:
+          type: application
+  keystone:
+    charm: "cs:.*keystone[-]?[0-9]*"
+    assertions:
+      ha:
+        assert_ha:
+          type: application
+  manilla:
+    charm: "cs:.*manilla[-]?[0-9]*"
+    assertions:
+      ha:
+        assert_ha:
+          type: application
+  neutron-api:
+    charm: "cs:.*neutron-api[-]?[0-9]*"
+    assertions:
+      ha:
+        assert_ha:
+          type: application
+  nova-cloud-controller:
+    charm: "cs:.*nova-cloud-controller[-]?[0-9]*"
+    assertions:
+      ha:
+        assert_ha:
+          type: application
+  nova-compute:
+    charm: "cs:.*nova-compute[-]?[0-9]*"
+    assertions:
+      vcpu-pin-set:
+        if-exists:
+          type: config
+          source: local
+        eq:
+          type: config
+          source: master
+          regexp: '.*kernel_opts:.+isolcpus=([0-9\-,]+).*'
+      cpu-model:
+        isset:
+          type: config
+          source: bundle
+  octavia:
+    charm: "cs:.*octavia[-]?[0-9]*"
+    assertions:
+      ha:
+        assert_ha:
+          type: application
+  placement:
+    charm: "cs:.*placement[-]?[0-9]*"
+    assertions:
+      ha:
+        assert_ha:
+          type: application    
+  swift-proxy:
+    charm: "cs:.*swift-proxy[-]?[0-9]*"
+    assertions:
+      ha:
+        assert_ha:
+          type: application
+  vault:
+    charm: "cs:.*vault[-]?[0-9]*"
+    assertions:
+      ha:
+        assert_ha:
+          type: application

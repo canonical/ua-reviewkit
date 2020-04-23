@@ -202,7 +202,7 @@ if $ctg_storage; then
             out="`sed -r \"s/.*(${svc}[[:alnum:]\-]*)\s+.+/\1/g;t;d\" ps| sort| uniq| sed -r 's/^\s+/  /g'`"
             id="`sed -r \"s/.*(${svc}[[:alnum:]\-]*)\s+.+--id\s+([[:digit:]]+)\s+.+/\2/g;t;d\" ps| tr -s '\n' ','| sort| sed -r -e 's/^\s+/  /g' -e 's/,$//g'`"
             [ -z "$out" ] && continue
-            echo "  - $out ($id)"
+            [ "$out" = ceph-osd ] && echo "  - $out ($id)" || echo "  - $out"
         done ) >> $f_output
         [ "$hash" = "`md5sum $f_output`" ] && echo "  - null" >> $f_output
     else

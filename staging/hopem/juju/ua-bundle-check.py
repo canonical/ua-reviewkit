@@ -58,7 +58,12 @@ class Logger(object):
 
             fd.write("{}\n".format(entry))
 
+
 class CheckResult(object):
+
+    RC_MAP = {0: 'PASS',
+              1: 'WARN',
+              2: 'FAIL'}
 
     def __init__(self, rc, opt=None, info=None, reason=None):
         self.rc = rc
@@ -80,11 +85,14 @@ class CheckResult(object):
         return "{}33m{}{}".format(CSI, s, RES)
 
     @property
-    def rc_str(self):
-        map = {0: 'PASS',
-               1: 'WARN',
-               2: 'FAIL'}
-        return map[self.rc]
+    def rc_str(self, formatted=False):
+        fmt_map = {0: self._grn,
+                   1: self._ylw,
+                   2: self._red}
+        if not formatted:
+            return self.RC_MAP[self.rc]
+        else:
+            return fmt_map[self.rc](self.RC_MAP[self.rc])
 
     @property
     def rc_str_fmt(self):
@@ -135,6 +143,13 @@ class UABundleChecker(object):
 
             for result in self.results[category]:
                 self.logger.log(result)
+
+    def get_results_summary(self):
+        summary = {}
+        for category in self.results:
+            summary[category] = len(self.results[category])
+
+        return summary
 
     def add_result(self, result):
         if result.rc_str in self.results:
@@ -297,7 +312,8 @@ if __name__ == "__main__":
     bundle_sha = hashlib.sha1()
     bundle_sha.update(open(bundle, 'rb').read())
 
-    logger = Logger("ua-bundle-checks.{}.log".format(args.type), not args.quiet)
+    logger = Logger("ua-bundle-checks.{}.log".format(args.type),
+                    not args.quiet)
     logger.log(HEADER_TEMPLATE.format(datetime.datetime.now(), args.type,
                                       bundle, bundle_sha.hexdigest(),
                                       checks_path), stdout=True)
@@ -322,8 +338,21 @@ if __name__ == "__main__":
         checks_run.append(checker)
 
     logger.log("\nResults:")
+    summary = {s: 0 for rc, s in CheckResult.RC_MAP.items()}
     for check in checks_run:
+        s = check.get_results_summary()
+        for cat in s:
+            if summary.get(cat):
+                summary[cat] += s[cat]
+            else:
+                summary[cat] = s[cat]
+
         check.show_results(ignore_pass=args.errors_only)
 
-    logger.log("\nCompleted.\nResults can be found in {}"
-               .format(logger.logfile), stdout=True)
+    # Show summary
+    logger.log("\nSummary:", stdout=True)
+    for cat in summary:
+        logger.log(" {}: {}".format(cat, summary[cat]), stdout=True)
+
+    print("\nINFO: see --help for more options")
+    print("Results are logged in {}".format(logger.logfile))

@@ -17,6 +17,7 @@
 #  - edward.hope-morley@canonical.com
 
 import os
+import sys
 
 import argparse
 import datetime
@@ -191,6 +192,11 @@ class UABundleChecker(object):
         if assertion["source"] == "local":
             value = assertion["value"]
         elif assertion["source"] == "master":  # config/master.yaml
+            if not self.fce_config:
+                reason = "fce config not available - skipping"
+                self.add_result(CheckResult(1, opt=opt, reason=reason))
+                return
+
             master = os.path.join(self.fce_config, "master.yaml")
             # this must be python re compatible with 1 substring match
             regexp = assertion["regexp"]
@@ -294,7 +300,7 @@ if __name__ == "__main__":
                         required=False,
                         help="Type of bundle (openstack, kubernetes etc)")
     parser.add_argument('--fce-config', type=str,
-                        required=True, help="Path to FCE config.")
+                        required=False, help="Path to FCE config.")
     parser.add_argument('--bundle', '-b', type=str,
                         required=False, help="Path to alternate bundle. "
                         "Default is to use $FCE_CONFIG/bundle.yaml")
@@ -303,10 +309,19 @@ if __name__ == "__main__":
     parser.add_argument('--quiet', '-q', action='store_true', default=False)
     args = parser.parse_args()
 
+    bundle = None
     if args.bundle:
         bundle = args.bundle
-    else:
-        bundle = os.path.join(args.fce_config, "bundle.yaml")
+
+    if args.fce_config:
+        if not args.bundle:
+            bundle = os.path.join(args.fce_config, "bundle.yaml")
+    elif bundle and not os.path.exists(args.bundle):
+            raise Exception("ERROR: --bundle must be a path")
+
+    if not bundle:
+        print("ERROR: one of --bundle or --fce-config is required")
+        sys.exit(1)
 
     checks_path = 'checks/{}.yaml'.format(args.type)
     bundle_sha = hashlib.sha1()

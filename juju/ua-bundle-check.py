@@ -124,7 +124,8 @@ class UABundleChecker(object):
 
     def __init__(self, app, bundle_apps, charm_regex, assertions, fce_config,
                  logger):
-        self.app_name = app
+        self.applications = []
+        self.app_name = None
         self.bundle_apps = bundle_apps
         self.charm_regex = charm_regex
         self.assertions = assertions
@@ -137,55 +138,72 @@ class UABundleChecker(object):
         if not self.results:
             return
 
-        self.logger.log("=> application '{}'".format(self.app_name))
-        for category in self.results:
-            if ignore_pass and category == "PASS":
-                continue
+        for app in self.results:
+            results = self.results[app]
+            self.logger.log("=> application '{}'".format(app))
+            for category in results:
+                if ignore_pass and category == "PASS":
+                    continue
 
-            for result in self.results[category]:
-                self.logger.log(result)
+                for result in results[category]:
+                    self.logger.log(result)
 
     def get_results_summary(self):
         summary = {}
-        for category in self.results:
-            summary[category] = len(self.results[category])
+        for app in self.results:
+            results = self.results[app]
+            for category in results:
+                summary[category] = len(results[category])
 
         return summary
 
     def add_result(self, result):
-        if result.rc_str in self.results:
-            self.results[result.rc_str].append(result)
+        if self.app_name not in self.results:
+            self.results[self.app_name] = {}
+
+        results = self.results[self.app_name]
+        if result.rc_str in results:
+            results[result.rc_str].append(result)
         else:
-            self.results[result.rc_str] = [result]
+            results[result.rc_str] = [result]
 
     def run_assertions(self):
         if not self.assertions:
             self.add_result(CheckResult(2, reason="no assertions defined"))
             return
 
-        for opt in self.assertions:
-            if 'if-exists' in self.assertions[opt]:
-                if not self.exists(opt):
-                    continue
-                else:
-                    del self.assertions[opt]['if-exists']
+        if not self.has_charm_matches():
+            return
 
-            for method in self.assertions[opt]:
-                self.run(opt, method, self.assertions[opt][method])
+        for app in self.applications:
+            self.app_name = app
+            defaults_key = "allow_default"
+            for opt in self.assertions:
+                if defaults_key in self.assertions[opt]:
+                    # if opt is not set in bundle and we have allowed charm default
+                    # then we log a PASS and continue to the next opt in the
+                    # assertions list.
+                    if not self.opt_exists(opt):
+                        reason = "using charm default"
+                        self.add_result(CheckResult(0, opt=opt, reason=reason))
+                        continue
+                    else:
+                        # otherwise we continue with asserting the value set.
+                        del self.assertions[opt][defaults_key]
 
-    def exists(self, opt):
-        return opt in self.bundle_apps[self.app_name]['options']
+                for method in self.assertions[opt]:
+                    self.run(opt, method, self.assertions[opt][method])
+
+    def opt_exists(self, opt):
+        return opt in self.bundle_apps[self.app_name].get('options', [])
 
     def run(self, opt, method, assertion):
-
-        if not self.has_bundle_charm_name():
-            return
 
         if assertion['type'] == "application":
             getattr(self, method)()
             return
 
-        if not self.exists(opt):
+        if not self.opt_exists(opt):
             self.add_result(CheckResult(2, opt=opt, reason="not found"))
             return
 
@@ -243,17 +261,18 @@ class UABundleChecker(object):
         return _int * conv[val[-1].lower()]
 
     def assert_ha(self):
+        min_units = 3
         num_units = self.bundle_apps[self.app_name].get('num_units', -1)
-        ret = CheckResult(0, opt="ensure-ha")
-        if num_units < 3:
-            ret.reason = ("not enough units (value={}, expected='>3')".
-                          format(num_units))
+        ret = CheckResult(0, opt="HA (>={})".format(min_units))
+        if num_units < min_units:
+            ret.reason = ("not enough units (value={}, expected='>={}')".
+                          format(num_units, min_units))
             ret.rc = 2
 
         self.add_result(ret)
 
     def gte(self, opt, value):
-        current = self.bundle_apps[self.app_name]['options'][opt]
+        current = self.bundle_apps[self.app_name].get('options', [])[opt]
         current = self.atoi(current)
         expected = self.atoi(value)
         ret = CheckResult(0, opt=opt, reason=("value={}".format(current)))
@@ -264,7 +283,7 @@ class UABundleChecker(object):
         self.add_result(ret)
 
     def eq(self, opt, value):
-        current = self.bundle_apps[self.app_name]['options'][opt]
+        current = self.bundle_apps[self.app_name].get('options', [])[opt]
         current = self.atoi(current)
         expected = self.atoi(value)
         ret = CheckResult(0, opt=opt, reason=("value={}".format(current)))
@@ -275,7 +294,7 @@ class UABundleChecker(object):
         self.add_result(ret)
 
     def isset(self, opt, value):
-        current = self.bundle_apps[self.app_name]['options'][opt]
+        current = self.bundle_apps[self.app_name].get('options', [])[opt]
         ret = CheckResult(0, opt=opt, reason="value={}".format(current))
         if not current:
             ret.reason = "no value set"
@@ -283,14 +302,18 @@ class UABundleChecker(object):
 
         self.add_result(ret)
 
-    def has_bundle_charm_name(self):
+    def get_applications(self):
+        self.applications = []
         for app in self.bundle_apps:
             r = re.match(re.compile(self.charm_regex),
                          self.bundle_apps[app].get('charm'))
             if r:
                 self.charm_name = r[0]
-                self.app_name = app
-                return True
+                self.applications.append(app)
+
+    def has_charm_matches(self):
+        self.get_applications()
+        return len(self.applications) > 0
 
 
 if __name__ == "__main__":
@@ -316,6 +339,8 @@ if __name__ == "__main__":
     if args.fce_config:
         if not args.bundle:
             bundle = os.path.join(args.fce_config, "bundle.yaml")
+        elif not os.path.exists(args.bundle):
+            bundle = os.path.join(args.fce_config, args.bundle)
     elif bundle and not os.path.exists(args.bundle):
             raise Exception("ERROR: --bundle must be a path")
 
@@ -341,11 +366,12 @@ if __name__ == "__main__":
         charm = check_defs['checks'][label]['charm']
         assertions = check_defs['checks'][label].get('assertions')
         if not assertions:
+            print("INFO: {} has no assertions defined".format(label))
             continue
 
         checker = UABundleChecker(label, bundle_apps, charm, assertions,
                                   args.fce_config, logger)
-        matches = checker.has_bundle_charm_name()
+        matches = checker.has_charm_matches()
         if not matches:
             logger.log("INFO: no match found for {} - skipping"
                        .format(checker.charm_regex))

@@ -190,6 +190,7 @@ class UABundleChecker(object):
                     else:
                         # otherwise we continue with asserting the value set.
                         pass
+
                 for method in self.assertions[opt]:
                     if method == defaults_key:
                         continue

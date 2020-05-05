@@ -180,18 +180,21 @@ class UABundleChecker(object):
             defaults_key = "allow_default"
             for opt in self.assertions:
                 if defaults_key in self.assertions[opt]:
-                    # if opt is not set in bundle and we have allowed charm default
-                    # then we log a PASS and continue to the next opt in the
-                    # assertions list.
+                    # if opt is not set in bundle and we have allowed charm
+                    # default then we log a PASS and continue to the next opt
+                    # in the assertions list.
                     if not self.opt_exists(opt):
                         reason = "using charm default"
                         self.add_result(CheckResult(0, opt=opt, reason=reason))
                         continue
                     else:
                         # otherwise we continue with asserting the value set.
-                        del self.assertions[opt][defaults_key]
+                        pass
 
                 for method in self.assertions[opt]:
+                    if method == defaults_key:
+                        continue
+
                     self.run(opt, method, self.assertions[opt][method])
 
     def opt_exists(self, opt):

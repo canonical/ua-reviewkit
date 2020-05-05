@@ -1,7 +1,7 @@
 # See README_check_definitions.md
 checks:
   kubernetes-master:
-    charm: "cs:.*kubernetes-master[-]?[0-9]*"
+    charm: "cs:.*kubernetes-master[-]?[0-9]*$"
     assertions:
       ha:
         assert_ha:
@@ -15,13 +15,13 @@ checks:
           source: local
           value: "RBAC,Node"
   kubeapi-load-balancer:
-    charm: "cs:.*kubeapi-load-balancer[-]?[0-9]*"
+    charm: "cs:.*kubeapi-load-balancer[-]?[0-9]*$"
     assertions:
       ha:
         assert_ha:
           type: application
   hacluster:
-    charm: "cs:.*hacluster[-]?[-a-z0-9]*"
+    charm: "cs:.*hacluster[-]?[-a-z0-9]*$"
     assertions:
       cluster_count:
         gte:
@@ -29,13 +29,13 @@ checks:
           source: local
           value: 3
   etcd:
-    charm: "cs:.*etcd[-]?[0-9]*"
+    charm: "cs:.*etcd[-]?[0-9]*$"
     assertions:
       ha:
         assert_ha:
           type: application
   canal:
-    charm: "cs:.*canal[-]?[0-9]*"
+    charm: "cs:.*canal[-]?[0-9]*$"
     assertions:
       cidr:
         isset:
@@ -43,7 +43,7 @@ checks:
           source: local
           value: ""
   vault:
-    charm: "cs:.*vault[-]?[0-9]*"
+    charm: "cs:.*vault[-]?[0-9]*$"
     assertions:
       ha:
         assert_ha:

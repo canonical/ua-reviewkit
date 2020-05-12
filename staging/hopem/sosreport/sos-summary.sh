@@ -163,7 +163,7 @@ if $ctg_openstack; then
     rados
     swift
     vault
-    qemu-system-x86_64
+    qemu-system-
     )
     if [ -r "ps" ]; then
         declare -A openstack_info=()

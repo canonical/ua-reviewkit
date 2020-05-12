@@ -1,17 +1,16 @@
-# See README.md for schema details
+# See README.md and 'ua-bundle-check.py --schema' for usage and schema details
 checks:
   kubernetes-master:
     charm: "cs:.*kubernetes-master[-]?[0-9]*$"
     assertions:
       ha:
         assert_ha:
-          type: application
+          scope: application
       authorization-mode:
         allow_default:
-          type: config
-          source: local
+          scope: config
         eq:
-          type: config
+          scope: config
           source: local
           value: "RBAC,Node"
   kubeapi-load-balancer:
@@ -19,13 +18,15 @@ checks:
     assertions:
       ha:
         assert_ha:
-          type: application
+          scope: application
   hacluster:
     charm: "cs:.*hacluster[-]?[-a-z0-9]*$"
     assertions:
       cluster_count:
+        allow_default:
+          scope: config
         gte:
-          type: config
+          scope: config
           source: local
           value: 3
   etcd:
@@ -33,18 +34,18 @@ checks:
     assertions:
       ha:
         assert_ha:
-          type: application
+          scope: application
   canal:
     charm: "cs:.*canal[-]?[0-9]*$"
     assertions:
       cidr:
         isset:
-          type: config
-          source: local
+          scope: config
+          source: bundle
           value: ""
   vault:
     charm: "cs:.*vault[-]?[0-9]*$"
     assertions:
       ha:
         assert_ha:
-          type: application
+          scope: application

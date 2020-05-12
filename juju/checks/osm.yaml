@@ -1,4 +1,4 @@
-# See README.md for schema details
+# See README.md and 'ua-bundle-check.py --schema' for usage and schema details
 checks:
   grafana-k8s:
     charm: "cs:.*grafana-k8s[-]?[0-9]*$"

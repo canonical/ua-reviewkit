@@ -1,19 +1,19 @@
-# See README.md for schema details
+# See README.md and 'ua-bundle-check.py --schema' for usage and schema details
 checks:
   mysql-percona:
     charm: "cs:.*percona-cluster[-]?[0-9]*$"
     assertions:
       ha:
         assert_ha:
-          type: application
+          scope: application
       innodb-buffer-pool-size:
         gte:
-          type: config
+          scope: config
           source: local
           value: 6G
       max-connections:
         gte:
-          type: config
+          scope: config
           source: local
           value: 2000
   mysql-innodb-cluster:
@@ -21,15 +21,15 @@ checks:
     assertions:
       ha:
         assert_ha:
-          type: application
+          scope: application
       innodb-buffer-pool-size:
         gte:
-          type: config
+          scope: config
           source: local
           value: 6G
       max-connections:
         gte:
-          type: config
+          scope: config
           source: local
           value: 2000
   rabbitmq-server:
@@ -37,13 +37,12 @@ checks:
     assertions:
       ha:
         assert_ha:
-          type: application
+          scope: application
       cluster-partition-handling:
         allow_default:
-          type: config
-          source: local
+          scope: config
         eq:
-          type: config
+          scope: config
           source: local
           value: "ignore"
   etcd:
@@ -51,19 +50,19 @@ checks:
     assertions:
       ha:
         assert_ha:
-          type: application
+          scope: application
   barbican:
     charm: "cs:.*barbican[-]?[0-9]*$"
     assertions:
       ha:
         assert_ha:
-          type: application
+          scope: application
   ceph-mon:
     charm: "cs:.*ceph-mon[-]?[0-9]*$"
     assertions:
       ha:
         assert_ha:
-          type: application
+          scope: application
   ceph-osd:
     charm: "cs:.*ceph-osd[-]?[0-9]*$"
     assertions:
@@ -78,102 +77,100 @@ checks:
     assertions:
       ha:
         assert_ha:
-          type: application
+          scope: application
   designate:
     charm: "cs:.*designate[-]?[0-9]*$"
     assertions:
       ha:
         assert_ha:
-          type: application
+          scope: application
   glance:
     charm: "cs:.*glance[-]?[0-9]*$"
     assertions:
       ha:
         assert_ha:
-          type: application
+          scope: application
   gnocchi:
     charm: "cs:.*gnocchi[-]?[0-9]*$"
     assertions:
       ha:
         assert_ha:
-          type: application
+          scope: application
   heat:
     charm: "cs:.*heat[-]?[0-9]*$"
     assertions:
       ha:
         assert_ha:
-          type: application
+          scope: application
   keystone:
     charm: "cs:.*keystone[-]?[0-9]*$"
     assertions:
       ha:
         assert_ha:
-          type: application
+          scope: application
   manilla:
     charm: "cs:.*manilla[-]?[0-9]*$"
     assertions:
       ha:
         assert_ha:
-          type: application
+          scope: application
   neutron-api:
     charm: "cs:.*neutron-api[-]?[0-9]*$"
     assertions:
       ha:
         assert_ha:
-          type: application
+          scope: application
   nova-cloud-controller:
     charm: "cs:.*nova-cloud-controller[-]?[0-9]*$"
     assertions:
       ha:
         assert_ha:
-          type: application
+          scope: application
   nova-compute:
     charm: "cs:.*nova-compute[-]?[0-9]*$"
     assertions:
       vcpu-pin-set:
         allow_default:
-          type: config
-          source: local
+          scope: config
         eq:
-          type: config
+          scope: config
           source: master
-          regexp: '.*kernel_opts:.+isolcpus=([0-9\-,]+).*'
+          value: '.*kernel_opts:.+isolcpus=([0-9\-,]+).*'
       cpu-model:
         isset:
-          type: config
+          scope: config
           source: bundle
   octavia:
     charm: "cs:.*octavia[-]?[0-9]*$"
     assertions:
       ha:
         assert_ha:
-          type: application
+          scope: application
   placement:
     charm: "cs:.*placement[-]?[0-9]*$"
     assertions:
       ha:
         assert_ha:
-          type: application    
+          scope: application    
   swift-proxy:
     charm: "cs:.*swift-proxy[-]?[0-9]*$"
     assertions:
       ha:
         assert_ha:
-          type: application
+          scope: application
   vault:
     charm: "cs:.*vault[-]?[0-9]*$"
     assertions:
       ha:
         assert_ha:
-          type: application
+          scope: application
   hacluster:
     charm: "cs:.*hacluster[-]?[0-9]*$"
     assertions:
       cluster_count:
         allow_default:
-          type: config
-          source: local
+          scope: config
         gte:
-          type: config
+          scope: config
           source: local
           value: 3

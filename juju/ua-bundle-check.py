@@ -120,6 +120,100 @@ class CheckResult(object):
         return msg
 
 
+class AssertionHelpers(object):
+
+    def __init__(self):
+        self.schema = {self.assert_ha.__name__:
+                       {'description':
+                        '"Ensure application has minimum number of units"',
+                        'scope': 'application',
+                        'source': 'bundle',
+                        'value': None},
+                       self.gte.__name__:
+                       {'description':
+                        '"Ensure option is gte to value"'},
+                       self.eq.__name__:
+                       {'description':
+                        '"Ensure option equal to value"'},
+                       self.isset.__name__:
+                       {'description':
+                        '"Ensure option has a provided value"',
+                        'source': 'bundle',
+                        'value': None}}
+
+    @staticmethod
+    def assertion_opts_common():
+        return {'scope': "[config|application]",
+                'source': "[local|bundle|master]",
+                'value': "<value>  # if 'source: master' this must "
+                         "be regex with single substring match"}
+
+    @staticmethod
+    def atoi(val):
+        if type(val) != str:
+            return val
+
+        if type(val[-1]) != str:
+            return val
+
+        try:
+            _int = int(val[0:-1])
+        except Exception:
+            return val
+
+        quotient = 1024
+        if val[-1].lower() == val[-1]:
+            quotient = 1000
+
+        conv = {"g": quotient ** 3,
+                "m": quotient ** 2,
+                "k": quotient}
+
+        return _int * conv[val[-1].lower()]
+
+    def assert_ha(self, application):
+        min_units = 3
+        num_units = application.get('num_units', -1)
+        ret = CheckResult(0, opt="HA (>={})".format(min_units))
+        if num_units < min_units:
+            ret.reason = ("not enough units (value={}, expected='>={}')".
+                          format(num_units, min_units))
+            ret.rc = 2
+
+        return ret
+
+    def gte(self, application, opt, value):
+        current = application.get('options', [])[opt]
+        current = self.atoi(current)
+        expected = self.atoi(value)
+        ret = CheckResult(0, opt=opt, reason=("value={}".format(current)))
+        if current < expected:
+            ret.reason = "value={}, expected={}".format(current, expected)
+            ret.rc = 2
+
+        return ret
+
+    def eq(self, application, opt, value):
+        current = application.get('options', [])[opt]
+        current = self.atoi(current)
+        expected = self.atoi(value)
+        ret = CheckResult(0, opt=opt, reason=("value={}".format(current)))
+        if current != expected:
+            ret.reason = "value={}, expected={}".format(current, expected)
+            ret.rc = 2
+
+        return ret
+
+    def isset(self, app, opt, value):
+        current = app.get('options', [])[opt]
+        ret = CheckResult(0, opt=opt, reason="value={}".format(current))
+        if not current:
+            ret.reason = "no value set"
+            ret.rc = 1
+
+        return ret
+
+
 class UABundleChecker(object):
 
     def __init__(self, app, bundle_apps, charm_regex, assertions, fce_config,
@@ -133,6 +227,7 @@ class UABundleChecker(object):
         self.logger = logger
         self.charm_name = None
         self.results = {}
+        self.assertion_helpers = AssertionHelpers()
 
     def show_results(self, ignore_pass=False):
         if not self.results:
@@ -153,7 +248,10 @@ class UABundleChecker(object):
         for app in self.results:
             results = self.results[app]
             for category in results:
-                summary[category] = len(results[category])
+                if category in summary:
+                    summary[category] += len(results[category])
+                else:
+                    summary[category] = len(results[category])
 
         return summary
 
@@ -201,9 +299,11 @@ class UABundleChecker(object):
         return opt in self.bundle_apps[self.app_name].get('options', [])
 
     def run(self, opt, method, assertion):
+        application = self.bundle_apps[self.app_name]
 
-        if assertion['type'] == "application":
-            getattr(self, method)()
+        if assertion['scope'] == "application":
+            self.add_result(
+                getattr(self.assertion_helpers, method)(application))
             return
 
         if not self.opt_exists(opt):
@@ -220,16 +320,15 @@ class UABundleChecker(object):
 
             master = os.path.join(self.fce_config, "master.yaml")
             # this must be python re compatible with 1 substring match
-            regexp = assertion["regexp"]
-            value = None
+            value = assertion["value"]
             with open(master) as fd:
                 for line in fd.readlines():
-                    r = re.match(re.compile(regexp), line)
+                    r = re.match(re.compile(value), line)
                     if r:
                         value = r[1]
             if not value:
                 reason = ("no match found in {} with: {}".
-                          format(master, assertion['regexp']))
+                          format(master, assertion['value']))
                 self.add_result(CheckResult(2, opt=opt, reason=reason))
                 return
         elif assertion["source"] == "bundle":
@@ -237,73 +336,11 @@ class UABundleChecker(object):
             # only supported by isset() currently
             value = None
         else:
-            raise Exception("Unknown assertion data source")
+            raise Exception("Unknown assertion data source '{}'".format(
+                assertion["source"]))
 
-        getattr(self, method)(opt, value)
-
-    def atoi(self, val):
-        if type(val) != str:
-            return val
-
-        if type(val[-1]) != str:
-            return val
-
-        try:
-            _int = int(val[0:-1])
-        except Exception:
-            return val
-
-        quotient = 1024
-        if val[-1].lower() == val[-1]:
-            quotient = 1000
-
-        conv = {"g": quotient ** 3,
-                "m": quotient ** 2,
-                "k": quotient}
-
-        return _int * conv[val[-1].lower()]
-
-    def assert_ha(self):
-        min_units = 3
-        num_units = self.bundle_apps[self.app_name].get('num_units', -1)
-        ret = CheckResult(0, opt="HA (>={})".format(min_units))
-        if num_units < min_units:
-            ret.reason = ("not enough units (value={}, expected='>={}')".
-                          format(num_units, min_units))
-            ret.rc = 2
-
-        self.add_result(ret)
-
-    def gte(self, opt, value):
-        current = self.bundle_apps[self.app_name].get('options', [])[opt]
-        current = self.atoi(current)
-        expected = self.atoi(value)
-        ret = CheckResult(0, opt=opt, reason=("value={}".format(current)))
-        if current < expected:
-            ret.reason = "value={}, expected={}".format(current, expected)
-            ret.rc = 2
-
-        self.add_result(ret)
-
-    def eq(self, opt, value):
-        current = self.bundle_apps[self.app_name].get('options', [])[opt]
-        current = self.atoi(current)
-        expected = self.atoi(value)
-        ret = CheckResult(0, opt=opt, reason=("value={}".format(current)))
-        if current != expected:
-            ret.reason = "value={}, expected={}".format(current, expected)
-            ret.rc = 2
-
-        self.add_result(ret)
-
-    def isset(self, opt, value):
-        current = self.bundle_apps[self.app_name].get('options', [])[opt]
-        ret = CheckResult(0, opt=opt, reason="value={}".format(current))
-        if not current:
-            ret.reason = "no value set"
-            ret.rc = 1
-
-        self.add_result(ret)
+        self.add_result(
+            getattr(self.assertion_helpers, method)(application, opt, value))
 
     def get_applications(self):
         self.applications = []
@@ -333,7 +370,31 @@ if __name__ == "__main__":
     parser.add_argument('--errors-only', action='store_true', default=False,
                         help="Exclude [PASS] info.")
     parser.add_argument('--quiet', '-q', action='store_true', default=False)
+    parser.add_argument('--schema', action='store_true', default=False)
     args = parser.parse_args()
+
+    if args.schema:
+        asshelper = AssertionHelpers()
+        print("# Assertion schema generated using 'ua-bundle-check.py "
+              "--schema'")
+        print("checks:")
+        print("  <label>:")
+        print("    charm: <regex>")
+        print("      <charm-option>:")
+        print("      assertions:")
+        for key, value in asshelper.schema.items():
+            print("        {}:".format(key))
+            print("          description: {}".format(value['description']))
+            opts = asshelper.assertion_opts_common()
+            for opt in opts:
+                if opt in value:
+                    if value[opt]:
+                        print("          {}: {}".format(opt, value[opt]))
+                    continue
+                values = opts[opt]
+                print("          {}: {}".format(opt, values))
+        print("")
+        sys.exit(0)
 
     bundle = None
     if args.bundle:
@@ -399,4 +460,4 @@ if __name__ == "__main__":
         logger.log(" {}: {}".format(cat, summary[cat]), stdout=True)
 
     print("\nINFO: see --help for more options")
-    print("Results are logged in {}".format(logger.logfile))
+    print("Results saved in {}".format(logger.logfile))

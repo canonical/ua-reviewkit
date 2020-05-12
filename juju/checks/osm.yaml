@@ -1,0 +1,26 @@
+# See README.md for schema details
+checks:
+  grafana-k8s:
+    charm: "cs:.*grafana-k8s[-]?[0-9]*$"
+  kafka-k8s:
+    charm: "cs:.*kafka-k8s[-]?[0-9]*$"
+  lcm-k8s:
+    charm: "cs:.*lcm-k8s[-]?[0-9]*$"
+  mariadb-k8s:
+    charm: "cs:.*mariadb-k8s[-]?[0-9]*$"
+  mon-k8s:
+    charm: "cs:.*mon-k8s[-]?[0-9]*$"
+  mongodb-k8s:
+    charm: "cs:.*mongodb-k8s[-]?[0-9]*$"
+  nbi-k8s:
+    charm: "cs:.*nbi-k8s[-]?[0-9]*$"
+  pol-k8s:
+    charm: "cs:.*pol-k8s[-]?[0-9]*$"
+  prometheus-k8s:
+    charm: "cs:.*prometheus-k8s[-]?[0-9]*$"
+  ro-k8s:
+    charm: "cs:.*ro-k8s[-]?[0-9]*$"
+  ui-k8s:
+    charm: "cs:.*ui-k8s[-]?[0-9]*$"
+  zookeeper-k8s:
+    charm: "cs:.*zookeeper-k8s[-]?[0-9]*$"

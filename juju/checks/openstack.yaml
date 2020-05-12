@@ -1,4 +1,4 @@
-# See README_check_definitions.md
+# See README.md for schema details
 checks:
   mysql-percona:
     charm: "cs:.*percona-cluster[-]?[0-9]*$"

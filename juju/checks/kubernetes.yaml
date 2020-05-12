@@ -1,4 +1,4 @@
-# See README_check_definitions.md
+# See README.md for schema details
 checks:
   kubernetes-master:
     charm: "cs:.*kubernetes-master[-]?[0-9]*$"

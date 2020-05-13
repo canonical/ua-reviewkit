@@ -15,11 +15,11 @@ provided. The type of checks file used is selected with the --type option. By
 default the tool will look for bundle.yaml under the path provided by
 --fce-config. You can override the bundle name with --bundle e.g.
 
-ua-bundle-checker.py --fce-config <path to cpe-deployments config directory>
+ua-bundle-check.py --fce-config <path to cpe-deployments config directory>
 
 or
 
-ua-bundle-checker.py --fce-config <path to cpe-deployments config directory> --bundle <filename>
+ua-bundle-check.py --fce-config <path to cpe-deployments config directory> --bundle <filename>
 
 For environments that do not have fce config you can just provide the path to a
 bundle with --bundle and any checks that would have required fce data will be

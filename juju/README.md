@@ -38,6 +38,10 @@ or
 ua-bundle-check.py --fce-config <path to cpe-deployments config directory> --bundle <filename>
 ```
 
+NOTE: the --fce-config path must point to the config dir in a local clone of
+lp:cpe-deployments with the correct branch checked out. At some point we will
+add support for providing a url so that there is no need to clone.
+
 For environments that do not have fce config you can just provide the path to a
 bundle with --bundle and any checks that would have required fce data will be
 skipped with warning e.g.
@@ -45,6 +49,5 @@ skipped with warning e.g.
 ```
 ua-bundle-check.py --bundle <path to bundle>
 ```
-
 
 Results are logged in a file that can be used to share results.

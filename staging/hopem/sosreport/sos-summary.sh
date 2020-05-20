@@ -140,35 +140,36 @@ if $ctg_openstack; then
     echo -e "openstack:" >> $f_output
 
     # TODO: keep this list up-to-date with services we care about in the context of openstack
+    default_pfix_match='[[:alnum:]\-]+'
     declare -a services=(
-    aodh
-    apache
-    barbican
+    aodh$default_pfix_match
+    apache$default_pfix_match
+    barbican$default_pfix_match
     beam.smp
-    ceilometer
-    ceph
-    cinder
-    designate
-    glance
-    gnocchi
-    heat
+    ceilometer$default_pfix_match
+    ceph-[[:alpha:]]+
+    cinder$default_pfix_match
+    designate$default_pfix_match
+    glance$default_pfix_match
+    gnocchi$default_pfix_match
+    heat$default_pfix_match
     horizon
-    keystone
+    keystone$default_pfix_match
     mysqld
-    neutron
-    nova
-    octavia
+    neutron$default_pfix_match
+    nova$default_pfix_match
+    octavia$default_pfix_match
     openstack-dashboard
     rabbitmq-server
-    rados
-    swift
-    vault
-    qemu-system-
+    rados$default_pfix_match
+    swift$default_pfix_match
+    vault$default_pfix_match
+    qemu-system-[[:alnum:]\\-\\_]+
     )
     if [ -r "ps" ]; then
         declare -A openstack_info=()
         for svc in ${services[@]}; do
-            readarray -t out<<<"`sed -r -e \"s/.+(${svc}[[:alnum:]\-]*)\s+.+/\1/g;t;d\" ps`"
+            readarray -t out<<<"`sed -r -e \"s/.+($svc)\s+.+/\1/g;t;d\" ps`"
             ((${#out[@]}==0)) || [ -z "${out[0]}" ] && continue
             for e in ${out[@]}; do
                 n=${openstack_info[$e]:-0}

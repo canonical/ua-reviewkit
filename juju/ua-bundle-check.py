@@ -234,7 +234,7 @@ class AssertionHelpers(object):
                           {}).get('hyperconverged',
                                   {}).get('disks', {})
 
-            disklabel = None
+            diskprefix = None
             for disk in disks:
                 if disk.get('name') == os.path.basename(current):
                     if disk['type'] == "bcache":

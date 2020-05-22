@@ -213,6 +213,45 @@ class AssertionHelpers(object):
 
         return ret
 
+    def _find_disklabel_users(self, disks, label):
+        devs = []
+        for disk in disks:
+            if disk['type'] == "bcache":
+                backing_dev = disk['backing_device']
+                disklabel = re.compile("([a-z0-9]+)-.+").match(backing_dev)
+                if disklabel and disklabel[1] == label:
+                    devs.append(disk.get('name', "unknown"))
+
+        return devs
+
+    def exclusive_backing_dev(self, app, opt, value):
+        current = app.get('options', [])[opt]
+        ret = CheckResult(0, opt=opt, reason="value={}".format(current))
+
+        with open(value) as fd:
+            y = yaml.safe_load(fd)
+            disks = y.get('configs',
+                          {}).get('hyperconverged',
+                                  {}).get('disks', {})
+
+            disklabel = None
+            for disk in disks:
+                if disk.get('name') == os.path.basename(current):
+                    if disk['type'] == "bcache":
+                        backing_dev = disk['backing_device']
+                        diskprefix = (re.compile("([a-z0-9]+)-.+")
+                                      .match(backing_dev))
+                        break
+
+            if diskprefix:
+                devs = self._find_disklabel_users(disks, diskprefix[1])
+                if len(devs) > 1:
+                    ret.reason = ("bcaches sharing same backing disk: {}"
+                                  .format(devs))
+                    ret.rc = 1
+
+        return ret
+
 
 class UABundleChecker(object):
 
@@ -331,6 +370,13 @@ class UABundleChecker(object):
                           format(master, assertion['value']))
                 self.add_result(CheckResult(2, opt=opt, reason=reason))
                 return
+        elif assertion["source"] == "bucketsconfig":  # bucketsconfig.yaml
+            if not self.fce_config:
+                reason = "fce config not available - skipping"
+                self.add_result(CheckResult(1, opt=opt, reason=reason))
+                return
+
+            value = os.path.join(self.fce_config, "bucketsconfig.yaml")
         elif assertion["source"] == "bundle":
             # value is ignored, ensure that settings is non-null
             # only supported by isset() currently

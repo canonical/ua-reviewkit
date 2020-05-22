@@ -140,6 +140,11 @@ checks:
         isset:
           scope: config
           source: bundle
+      ephemeral-device:
+        exclusive_backing_dev:
+          description: "ensure that nova instances path (if using bcache) is not backed by same physical disk as rootfs"
+          scope: config
+          source: bucketsconfig
   octavia:
     charm: "cs:.*octavia[-]?[0-9]*$"
     assertions:

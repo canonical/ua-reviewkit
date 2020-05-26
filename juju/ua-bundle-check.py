@@ -120,9 +120,21 @@ class CheckResult(object):
         return msg
 
 
-class AssertionHelpers(object):
+class AssertionBase(object):
+    
+    def get_units(self, application):
+        if 'num_units' in application:
+            return application['num_units']
+        else:
+            return application['scale']
+
+        return -1
+
+
+class AssertionHelpers(AssertionBase):
 
     def __init__(self):
+        super(AssertionBase, self).__init__()
         self.schema = {self.assert_ha.__name__:
                        {'description':
                         '"Ensure application has minimum number of units"',
@@ -172,12 +184,12 @@ class AssertionHelpers(object):
         return _int * conv[val[-1].lower()]
 
     def assert_ha(self, application):
-        min_units = 3
-        num_units = application.get('num_units', -1)
-        ret = CheckResult(0, opt="HA (>={})".format(min_units))
-        if num_units < min_units:
+        min = 3
+        num_units = self.get_units(application)
+        ret = CheckResult(0, opt="HA (>={})".format(min))
+        if num_units < min:
             ret.reason = ("not enough units (value={}, expected='>={}')".
-                          format(num_units, min_units))
+                          format(num_units, min))
             ret.rc = 2
 
         return ret

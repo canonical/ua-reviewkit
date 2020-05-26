@@ -2,25 +2,80 @@
 checks:
   grafana-k8s:
     charm: "cs:.*grafana-k8s[-]?[0-9]*$"
+    assertions:
+      ha:
+        assert_ha:
+          scope: application
   kafka-k8s:
     charm: "cs:.*kafka-k8s[-]?[0-9]*$"
+    assertions:
+      ha:
+        assert_ha:
+          scope: application
+      kafka-units:
+        allow_default:
+          scope: config
+        gte:
+          scope: config
+          source: local
+          value: 3
   lcm-k8s:
     charm: "cs:.*lcm-k8s[-]?[0-9]*$"
+    assertions:
+      ha:
+        assert_ha:
+          scope: application
   mariadb-k8s:
     charm: "cs:.*mariadb-k8s[-]?[0-9]*$"
+    assertions:
+      ha:
+        assert_ha:
+          scope: application
   mon-k8s:
     charm: "cs:.*mon-k8s[-]?[0-9]*$"
+    assertions:
+      ha:
+        assert_ha:
+          scope: application
   mongodb-k8s:
     charm: "cs:.*mongodb-k8s[-]?[0-9]*$"
+    assertions:
+      ha:
+        assert_ha:
+          scope: application
   nbi-k8s:
     charm: "cs:.*nbi-k8s[-]?[0-9]*$"
+    assertions:
+      ha:
+        assert_ha:
+          scope: application
   pol-k8s:
     charm: "cs:.*pol-k8s[-]?[0-9]*$"
+    assertions:
+      ha:
+        assert_ha:
+          scope: application
   prometheus-k8s:
     charm: "cs:.*prometheus-k8s[-]?[0-9]*$"
+    assertions:
+      ha:
+        assert_ha:
+          scope: application
   ro-k8s:
     charm: "cs:.*ro-k8s[-]?[0-9]*$"
+    assertions:
+      ha:
+        assert_ha:
+          scope: application
   ui-k8s:
     charm: "cs:.*ui-k8s[-]?[0-9]*$"
+    assertions:
+      ha:
+        assert_ha:
+          scope: application
   zookeeper-k8s:
     charm: "cs:.*zookeeper-k8s[-]?[0-9]*$"
+    assertions:
+      ha:
+        assert_ha:
+          scope: application

@@ -3,7 +3,7 @@
 This directory contains tools that provide checks to aspects of Openstack
 deployments that might not be covered by existing tests.
 
-To run the checks you muct provide the full path to a credentials file:
+To run the checks you must provide the full path to a credentials file:
 
    openstack-extra-checks.sh /path/to/openrc
 

@@ -1,0 +1,3 @@
+[__BLOCKSIZE__]
+ iodepth=__IODEPTH__
+ blocksize=__BLOCKSIZE__

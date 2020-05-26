@@ -9,7 +9,12 @@ NO_TARBALL=false
 declare -a TEST_JOBS=()
 declare -a TEST_CLASSES=()
 
-readarray AVAILABLE_JOBS<<<"`ls conf| sed -r 's/^(.+)\.fio\.template$/\1/g;t;d'| grep -v global`"
+declare -A CUSTOM_JOB_OPTS=(
+    [--blocksize]=
+    [--iodepth]=
+)
+
+readarray AVAILABLE_JOBS<<<"`ls conf| sed -r 's/^(.+)\.fio\.template$/\1/g;t;d'| egrep -v 'global|custom'`"
 readarray AVAILABLE_CLASSES<<<"`ls conf| sed -r 's/^(.+)-global\.fio\.template$/\1/g;t;d'| egrep -v 'common'`"
 
 usage ()
@@ -21,20 +26,9 @@ USAGE: `basename $0` OPTIONS
     tarball.
 
 OPTIONS:
-    -h|--help
-        Prints this message
-    -l|--label
-        Job label. Will use 'date +%s' if not provided.
-    -n|--name
-        Name for test run used to identify results. Defaults to $TESTNAME.
-    --job
-        Test job to run, Available options are:
-`echo "${AVAILABLE_JOBS[@]}"| xargs -l -I{} echo -e "\t - {}"`
-
-        Can be specified multiple times.
-
-        If no job is specified then all will be run. If you want avoid being
-        asked for confirmation that you mean all then set this to "all".
+    --blocksize
+        Custom blocksize. If this is provided you also need to provide an
+        iodepth with --iodepth. This overrides --job.
     --class
         Test class to run, Available options are:
 `echo "${AVAILABLE_CLASSES[@]}"| xargs -l -I{} echo -e "\t - {}"`
@@ -45,13 +39,30 @@ OPTIONS:
         asked for confirmation that you mean all then set this to "all".
     --dry-run
         Do not execute the test. Will generate the config and print the command.
-    --yes
-        Run tests non-interactively.
+    -h|--help
+        Prints this message
+    --iodepth
+        Custom iodepth. If this is provided you also need to provide a
+        blocksize with --blocksize. This overrides --job.
+    --job
+        Test job to run, Available options are:
+`echo "${AVAILABLE_JOBS[@]}"| xargs -l -I{} echo -e "\t - {}"`
+
+        Can be specified multiple times.
+
+        If no job is specified then all will be run. If you want avoid being
+        asked for confirmation that you mean all then set this to "all".
+    -l|--label
+        Job label. Will use 'date +%s' if not provided.
+    -n|--name
+        Name for test run used to identify results. Defaults to $TESTNAME.
     --no-cleanup
         Don't delete the fio IO file after tests. This is done by default to
         avoid running out of space for future tests.
     --no-tarball
         Do not create a tarball.
+    --yes
+        Run tests non-interactively.
 
 EOF
 }
@@ -60,6 +71,10 @@ while (($#)); do
     case $1 in
         --dry-run)
             OPT_DRY_RUN=true
+            ;;
+        --blocksize|--iodepth)
+            CUSTOM_JOB_OPTS[$1]=$2
+            shift
             ;;
         -h|--help)
             usage
@@ -125,9 +140,17 @@ in_array ()
     return 1
 }
 
+has_custom_job_opts ()
+{
+    for opt in ${!CUSTOM_JOB_OPTS[@]}; do
+        [ -z "${CUSTOM_JOB_OPTS[$opt]}" ] || return 0
+    done
+    return 1
+}
+
 answer=y
 if ((${#TEST_CLASSES[@]}==0)); then
-    read -p "All classes (${#AVAILABLE_CLASSES[@]}) will be run - OK? (use '--job $WILDCARD' to avoid this message) [y/N] " answer
+    read -p "All classes (${#AVAILABLE_CLASSES[@]}) will be run - OK? (use '--class $WILDCARD' to avoid this message) [y/N] " answer
     [ "${answer,,}" = "y" ] || { echo "Aborting."; exit; }
 else
     for c in ${TEST_CLASSES[@]}; do
@@ -137,8 +160,9 @@ else
         exit 1
     done
 fi
-if ((${#TEST_JOBS[@]}==0)); then
-    read -p "All jobs (${#AVAILABLE_JOBS[@]}) will be run - OK? (use '--class $WILDCARD' to avoid this message) [y/N] " answer
+
+if ((${#TEST_JOBS[@]}==0)) && ! has_custom_job_opts; then
+    read -p "All jobs (${#AVAILABLE_JOBS[@]}) will be run - OK? (use '--job $WILDCARD' to avoid this message) [y/N] " answer
     [ "${answer,,}" = "y" ] || { echo "Aborting."; exit; }
 else
     for j in ${TEST_JOBS[@]}; do
@@ -147,6 +171,13 @@ else
         echo "ERROR: unknown job '$j'"
         exit 1
     done
+fi
+# custom jobs can be added to the existing job list (which can be empty if custom is available)
+if has_custom_job_opts; then
+    for opt in ${!CUSTOM_JOB_OPTS[@]}; do
+        [ -n "${CUSTOM_JOB_OPTS[$opt]}" ] || { echo "ERROR: please provide $opt"; exit 1; }
+    done
+    TEST_JOBS+=( custom )
 fi
 
 { ((${#TEST_CLASSES[@]}==0)) || [ "${TEST_CLASSES[0]}" = "$WILDCARD" ]; } && TEST_CLASSES=( ${AVAILABLE_CLASSES[@]} )
@@ -168,7 +199,14 @@ for class in ${TEST_CLASSES[@]}; do
         config=${class}-${job}.fio
         cat conf/$global > $results_dir/$jobdir/$config
         cat conf/$job_template >> $results_dir/$jobdir/$config
+
+        if has_custom_job_opts; then
+            sed -r -i "s/__BLOCKSIZE__/${CUSTOM_JOB_OPTS[--blocksize]}/g" $results_dir/$jobdir/$config
+            sed -r -i "s/__IODEPTH__/${CUSTOM_JOB_OPTS[--iodepth]}/g" $results_dir/$jobdir/$config
+        fi
+
         sed -r -i "s/__TESTNAME__/$TESTNAME/g" $results_dir/$jobdir/$config
+
         # copy common global config into job dir
         cp conf/common-global.fio.template $results_dir/$jobdir/common-global.fio
         sed -r -i "s/__TESTNAME__/${TESTNAME}-${JOBDIR_PREFIX}/g" $results_dir/$jobdir/common-global.fio

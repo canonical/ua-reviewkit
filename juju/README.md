@@ -1,53 +1,47 @@
 # UA Juju Bundle Verification
 
-This tool takes as input a Juju bundle and Foundation Cloud Engine
-deployment configuration and runs through the bundle applying checks to charm
-config based on pre-defined assertions. These checks are defined as assertions
-on application config and are categorised by the type of deployment i.e.
-Openstack, Kuberenetes etc and maintained as open source that anyone can
-contribute to them.
+This tool takes as input a Juju bundle file and Foundation Cloud Engine
+deployment configuration and runs through the bundle applying checks e.g. to
+charm config, based on pre-defined assertions.
+
+Checks can be applied to charm config or application settings and are
+categorised by the type of deployment i.e. Openstack, Kuberenetes etc and
+maintained as open source so that anyone can contribute to them (see
+CONTRIBUTING.md for more info).
 
 All checks applied are defined in yaml and found in the checks directory. To
 add or modify checks it should generally only be necessary to modify the yaml
-but a new check requires an unsupported method, that will need to be added to
-the AssertionHelpers class in ua-bundle-check.py.
+but if a check requires a method that is not yet defined in the tool, that will
+need to be added to the AssertionHelpers class in ua-bundle-check.py.
 
 # Running the tool
 
-The first thing to do is decide what type of bundle it is. The default is
-"openstack" but you can also have e.g. "kubernetes" or "osm" and those are
-set use --type.
+The first thing to do is decide what type of deployment you are testing. This
+can currently be one of "openstack", "kubernetes" or "osm" and those are set
+use --type (default is openstack).
 
-Then you can either provide a path to an fce config (lp:cpe-deployments) and
-an optional bundle name override or just a bundle path - useful in scenarios
-where a deployment may not have an associated fce config dir.
+Then you must provide a path to your Juju bundle file and a path to your FCE
+config which is used in the case where checks want to cross-reference harware
+config information.
 
-The tool will then check the contents of a Juju bundle based on the checks file
-selected using --type.
-
-By default the tool will look for bundle.yaml under the --fce-config path
-provided. You can override this by providing a bundle name with --bundle e.g.
-
-```
-ua-bundle-check.py --fce-config <path to cpe-deployments config directory>
-```
-
-or
+If no bundle is provided with --bundle the tool will look for a file called
+bundle.yaml under the --fce-config path but it is best to export a bundle from
+your deployment so as to ensure what you are checking is what you have deployed
+(and catch any changes make post-deployment). To do this you can do:
 
 ```
-ua-bundle-check.py --fce-config <path to cpe-deployments config directory> --bundle <filename>
+juju export-bundle > mybundle.yaml
+ua-bundle-check.py --fce-config /path/to/cpe-deployments/config -b mybundle
 ```
 
-NOTE: the --fce-config path must point to the config dir in a local clone of
-lp:cpe-deployments with the correct branch checked out. At some point we will
-add support for providing a url so that there is no need to clone.
+The tool will then check the contents of your Juju bundle based on the selected
+checks file.
 
-For environments that do not have fce config you can just provide the path to a
-bundle with --bundle and any checks that would have required fce data will be
-skipped with warning e.g.
+NOTE: the --fce-config path must point to the config dir that was used to
+deploy your environent and therefore must correspond to the configuration of
+your infrastructure.
 
-```
-ua-bundle-check.py --bundle <path to bundle>
-```
+
+See --help for usage info.
 
 Results are logged in a file that can be used to share results.

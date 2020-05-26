@@ -5,8 +5,8 @@ deployment configuration and runs through the bundle applying checks e.g. to
 charm config, based on pre-defined assertions.
 
 Checks can be applied to charm config or application settings and are
-categorised by the type of deployment i.e. Openstack, Kuberenetes etc and
-maintained as open source so that anyone can contribute to them (see
+categorised by the type of deployment i.e. Openstack, Kubernetes etc and
+maintained as open-source so that anyone can contribute to them (see
 CONTRIBUTING.md for more info).
 
 All checks applied are defined in yaml and found in the checks directory. To
@@ -21,7 +21,7 @@ can currently be one of "openstack", "kubernetes" or "osm" and those are set
 use --type (default is openstack).
 
 Then you must provide a path to your Juju bundle file and a path to your FCE
-config which is used in the case where checks want to cross-reference harware
+config which is used in the case where checks want to cross-reference hardware
 config information.
 
 If no bundle is provided with --bundle the tool will look for a file called
@@ -38,7 +38,7 @@ The tool will then check the contents of your Juju bundle based on the selected
 checks file.
 
 NOTE: the --fce-config path must point to the config dir that was used to
-deploy your environent and therefore must correspond to the configuration of
+deploy your environment and therefore must correspond to the configuration of
 your infrastructure.
 
 

@@ -136,6 +136,7 @@ checks:
           scope: config
           source: master
           value: '.*kernel_opts:.+isolcpus=([0-9\-,]+).*'
+          warn-on-fail: true
       cpu-model:
         isset:
           scope: config

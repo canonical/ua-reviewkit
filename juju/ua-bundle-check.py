@@ -34,8 +34,8 @@ UA Juju bundle config verification
  * {}
  * type={}
  * bundle={}
- * bundle_sha1sum={}
- * assertions={}
+ * bundle_sha1={}
+ * assertions_sha1={}
 """
 HEADER_TEMPLATE += "=" * 80
 
@@ -62,11 +62,14 @@ class Logger(object):
 
 class CheckResult(object):
 
-    RC_MAP = {0: 'PASS',
-              1: 'WARN',
-              2: 'FAIL'}
+    PASS = 0
+    WARN = 1
+    FAIL = 2
+    RC_MAP = {PASS: 'PASS',
+              WARN: 'WARN',
+              FAIL: 'FAIL'}
 
-    def __init__(self, rc, opt=None, info=None, reason=None):
+    def __init__(self, rc=PASS, opt=None, info=None, reason=None):
         self.rc = rc
         self.opt = opt
         self.reason = reason
@@ -87,9 +90,9 @@ class CheckResult(object):
 
     @property
     def rc_str(self, formatted=False):
-        fmt_map = {0: self._grn,
-                   1: self._ylw,
-                   2: self._red}
+        fmt_map = {self.PASS: self._grn,
+                   self.WARN: self._ylw,
+                   self.FAIL: self._red}
         if not formatted:
             return self.RC_MAP[self.rc]
         else:
@@ -97,9 +100,9 @@ class CheckResult(object):
 
     @property
     def rc_str_fmt(self):
-        map = {0: self._grn('PASS'),
-               1: self._ylw('WARN'),
-               2: self._red('FAIL')}
+        map = {self.PASS: self._grn('PASS'),
+               self.WARN: self._ylw('WARN'),
+               self.FAIL: self._red('FAIL')}
         return map[self.rc]
 
     def unformatted(self):
@@ -121,44 +124,6 @@ class CheckResult(object):
 
 
 class AssertionBase(object):
-    
-    def get_units(self, application):
-        if 'num_units' in application:
-            return application['num_units']
-        else:
-            return application['scale']
-
-        return -1
-
-
-class AssertionHelpers(AssertionBase):
-
-    def __init__(self):
-        super(AssertionBase, self).__init__()
-        self.schema = {self.assert_ha.__name__:
-                       {'description':
-                        '"Ensure application has minimum number of units"',
-                        'scope': 'application',
-                        'source': 'bundle',
-                        'value': None},
-                       self.gte.__name__:
-                       {'description':
-                        '"Ensure option is gte to value"'},
-                       self.eq.__name__:
-                       {'description':
-                        '"Ensure option equal to value"'},
-                       self.isset.__name__:
-                       {'description':
-                        '"Ensure option has a provided value"',
-                        'source': 'bundle',
-                        'value': None}}
-
-    @staticmethod
-    def assertion_opts_common():
-        return {'scope': "[config|application]",
-                'source': "[local|bundle|master]",
-                'value': "<value>  # if 'source: master' this must "
-                         "be regex with single substring match"}
 
     @staticmethod
     def atoi(val):
@@ -183,45 +148,96 @@ class AssertionHelpers(AssertionBase):
 
         return _int * conv[val[-1].lower()]
 
-    def assert_ha(self, application):
+    def get_units(self, application):
+        if 'num_units' in application:
+            return application['num_units']
+        else:
+            return application['scale']
+
+        return -1
+
+
+class LocalAssertionHelpers(AssertionBase):
+
+    def __init__(self):
+        super(LocalAssertionHelpers, self).__init__()
+        self.schema = {self.assert_ha.__name__:
+                       {'description':
+                        '"Ensure application has minimum number of units"',
+                        'scope': 'application',
+                        'source': 'bundle',
+                        'value': None},
+                       self.gte.__name__:
+                       {'description':
+                        '"Ensure option is gte to value"'},
+                       self.eq.__name__:
+                       {'description':
+                        '"Ensure option equal to value"'},
+                       self.isset.__name__:
+                       {'description':
+                        '"Ensure option has a provided value"',
+                        'source': 'bundle',
+                        'value': None}}
+
+    @staticmethod
+    def assertion_opts_common():
+        return {'scope': "[config|application]",
+                'source': "[local|bundle|master]",
+                'value': "<value>  # if 'source: master' this must "
+                         "be regex with single substring match",
+                'warn-on-fail': 'bool'}
+
+    def assert_ha(self, application, warn_on_fail=False):
         min = 3
         num_units = self.get_units(application)
-        ret = CheckResult(0, opt="HA (>={})".format(min))
+        ret = CheckResult(opt="HA (>={})".format(min))
         if num_units < min:
             ret.reason = ("not enough units (value={}, expected='>={}')".
                           format(num_units, min))
-            ret.rc = 2
+            if warn_on_fail:
+                ret.rc = CheckResult.WARN
+            else:
+                ret.rc = CheckResult.FAIL
 
         return ret
 
-    def gte(self, application, opt, value):
+    def gte(self, application, opt, value, warn_on_fail=False):
         current = application.get('options', [])[opt]
         current = self.atoi(current)
         expected = self.atoi(value)
-        ret = CheckResult(0, opt=opt, reason=("value={}".format(current)))
+        ret = CheckResult(opt=opt, reason=("value={}".format(current)))
         if current < expected:
             ret.reason = "value={}, expected={}".format(current, expected)
-            ret.rc = 2
+            if warn_on_fail:
+                ret.rc = CheckResult.WARN
+            else:
+                ret.rc = CheckResult.FAIL
 
         return ret
 
-    def eq(self, application, opt, value):
+    def eq(self, application, opt, value, warn_on_fail=False):
         current = application.get('options', [])[opt]
         current = self.atoi(current)
         expected = self.atoi(value)
-        ret = CheckResult(0, opt=opt, reason=("value={}".format(current)))
+        ret = CheckResult(opt=opt, reason=("value={}".format(current)))
         if current != expected:
             ret.reason = "value={}, expected={}".format(current, expected)
-            ret.rc = 2
+            if warn_on_fail:
+                ret.rc = CheckResult.WARN
+            else:
+                ret.rc = CheckResult.FAIL
 
         return ret
 
-    def isset(self, app, opt, value):
+    def isset(self, app, opt, value, warn_on_fail=False):
         current = app.get('options', [])[opt]
-        ret = CheckResult(0, opt=opt, reason="value={}".format(current))
+        ret = CheckResult(opt=opt, reason="value={}".format(current))
         if not current:
             ret.reason = "no value set"
-            ret.rc = 1
+            if warn_on_fail:
+                ret.rc = CheckResult.WARN
+            else:
+                ret.rc = CheckResult.FAIL
 
         return ret
 
@@ -236,9 +252,9 @@ class AssertionHelpers(AssertionBase):
 
         return devs
 
-    def exclusive_backing_dev(self, app, opt, value):
+    def exclusive_backing_dev(self, app, opt, value, warn_on_fail=False):
         current = app.get('options', [])[opt]
-        ret = CheckResult(0, opt=opt, reason="value={}".format(current))
+        ret = CheckResult(opt=opt, reason="value={}".format(current))
 
         with open(value) as fd:
             y = yaml.safe_load(fd)
@@ -260,14 +276,48 @@ class AssertionHelpers(AssertionBase):
                 if len(devs) > 1:
                     ret.reason = ("bcaches sharing same backing disk: {}"
                                   .format(devs))
-                    ret.rc = 1
+                    if warn_on_fail:
+                        ret.rc = CheckResult.WARN
+                    else:
+                        ret.rc = CheckResult.FAIL
 
         return ret
 
 
+class MasterAssertionHelpers(LocalAssertionHelpers):
+
+    def __init__(self, master_path):
+        super(MasterAssertionHelpers, self).__init__()
+        self.master_path = master_path
+
+    def eq(self, application, opt, value, warn_on_fail=False):
+        master_value = None
+
+        with open(self.master_path) as fd:
+            for line in fd.readlines():
+                r = re.compile(value).match(line)
+                if r:
+                    master_value = r[1]
+                    break
+
+        if master_value:
+            return super(MasterAssertionHelpers, self).eq(
+                         application, opt, master_value, warn_on_fail)
+        else:
+            ret = CheckResult(opt=opt)
+            ret.reason = ("no match found in {} with: {}".
+                          format(self.master_path, value))
+            if warn_on_fail:
+                ret.rc = CheckResult.WARN
+            else:
+                ret.rc = CheckResult.FAIL
+
+            return ret
+
+
 class UABundleChecker(object):
 
-    def __init__(self, app, bundle_apps, charm_regex, assertions, fce_config,
+    def __init__(self, bundle_apps, charm_regex, assertions, fce_config,
                  logger):
         self.applications = []
         self.app_name = None
@@ -278,7 +328,9 @@ class UABundleChecker(object):
         self.logger = logger
         self.charm_name = None
         self.results = {}
-        self.assertion_helpers = AssertionHelpers()
+        self.local_assertion_helpers = LocalAssertionHelpers()
+        master_path = os.path.join(self.fce_config, "master.yaml")
+        self.master_assertion_helpers = MasterAssertionHelpers(master_path)
 
     def show_results(self, ignore_pass=False):
         if not self.results:
@@ -286,6 +338,9 @@ class UABundleChecker(object):
 
         for app in self.results:
             results = self.results[app]
+            if ignore_pass and set(results.keys()) == set(["PASS"]):
+                continue
+
             self.logger.log("=> application '{}'".format(app))
             for category in results:
                 if ignore_pass and category == "PASS":
@@ -318,7 +373,8 @@ class UABundleChecker(object):
 
     def run_assertions(self):
         if not self.assertions:
-            self.add_result(CheckResult(2, reason="no assertions defined"))
+            self.add_result(CheckResult(CheckResult.FAIL,
+                                        reason="no assertions defined"))
             return
 
         if not self.has_charm_matches():
@@ -334,7 +390,7 @@ class UABundleChecker(object):
                     # in the assertions list.
                     if not self.opt_exists(opt):
                         reason = "using charm default"
-                        self.add_result(CheckResult(0, opt=opt, reason=reason))
+                        self.add_result(CheckResult(opt=opt, reason=reason))
                         continue
                     else:
                         # otherwise we continue with asserting the value set.
@@ -351,14 +407,16 @@ class UABundleChecker(object):
 
     def run(self, opt, method, assertion):
         application = self.bundle_apps[self.app_name]
+        warn_on_fail = assertion.get('warn-on-fail', False)
 
         if assertion['scope'] == "application":
-            self.add_result(
-                getattr(self.assertion_helpers, method)(application))
+            self.add_result(getattr(self.local_assertion_helpers, method)
+                            (application, warn_on_fail=warn_on_fail))
             return
 
         if not self.opt_exists(opt):
-            self.add_result(CheckResult(2, opt=opt, reason="not found"))
+            self.add_result(CheckResult(CheckResult.FAIL,
+                                        opt=opt, reason="not found"))
             return
 
         if assertion["source"] == "local":
@@ -366,26 +424,22 @@ class UABundleChecker(object):
         elif assertion["source"] == "master":  # config/master.yaml
             if not self.fce_config:
                 reason = "fce config not available - skipping"
-                self.add_result(CheckResult(1, opt=opt, reason=reason))
+                self.add_result(CheckResult(CheckResult.WARN,
+                                            opt=opt, reason=reason))
                 return
 
-            master = os.path.join(self.fce_config, "master.yaml")
-            # this must be python re compatible with 1 substring match
-            value = assertion["value"]
-            with open(master) as fd:
-                for line in fd.readlines():
-                    r = re.match(re.compile(value), line)
-                    if r:
-                        value = r[1]
-            if not value:
-                reason = ("no match found in {} with: {}".
-                          format(master, assertion['value']))
-                self.add_result(CheckResult(2, opt=opt, reason=reason))
-                return
+            # assertion["value"] must be python re compatible macthing one
+            # substring.
+            self.add_result(
+                getattr(self.master_assertion_helpers,
+                        method)(application, opt, assertion["value"],
+                                warn_on_fail=warn_on_fail))
+            return
         elif assertion["source"] == "bucketsconfig":  # bucketsconfig.yaml
             if not self.fce_config:
                 reason = "fce config not available - skipping"
-                self.add_result(CheckResult(1, opt=opt, reason=reason))
+                self.add_result(CheckResult(CheckResult.WARN,
+                                            opt=opt, reason=reason))
                 return
 
             value = os.path.join(self.fce_config, "bucketsconfig.yaml")
@@ -398,7 +452,9 @@ class UABundleChecker(object):
                 assertion["source"]))
 
         self.add_result(
-            getattr(self.assertion_helpers, method)(application, opt, value))
+            getattr(self.local_assertion_helpers,
+                    method)(application, opt, value,
+                            warn_on_fail=warn_on_fail))
 
     def get_applications(self):
         self.applications = []
@@ -432,7 +488,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.schema:
-        asshelper = AssertionHelpers()
+        asshelper = LocalAssertionHelpers()
         print("# Assertion schema generated using 'ua-bundle-check.py "
               "--schema'")
         print("checks:")
@@ -464,13 +520,16 @@ if __name__ == "__main__":
         elif not os.path.exists(args.bundle):
             bundle = os.path.join(args.fce_config, args.bundle)
     elif bundle and not os.path.exists(args.bundle):
-            raise Exception("ERROR: --bundle must be a path")
+        raise Exception("ERROR: --bundle must be a path")
 
     if not bundle:
         print("ERROR: one of --bundle or --fce-config is required")
         sys.exit(1)
 
     checks_path = 'checks/{}.yaml'.format(args.type)
+    checks_sha = hashlib.sha1()
+    checks_sha.update(open(checks_path, 'rb').read())
+
     bundle_sha = hashlib.sha1()
     bundle_sha.update(open(bundle, 'rb').read())
 
@@ -478,7 +537,7 @@ if __name__ == "__main__":
                     not args.quiet)
     logger.log(HEADER_TEMPLATE.format(datetime.datetime.now(), args.type,
                                       bundle, bundle_sha.hexdigest(),
-                                      checks_path), stdout=True)
+                                      checks_sha.hexdigest()), stdout=True)
 
     bundle_apps = yaml.safe_load(open(bundle).read())['applications']
     check_defs = yaml.safe_load(open(checks_path).read())
@@ -488,13 +547,14 @@ if __name__ == "__main__":
         charm = check_defs['checks'][label]['charm']
         assertions = check_defs['checks'][label].get('assertions')
         if not assertions:
-            print("INFO: {} has no assertions defined".format(label))
+            if not args.errors_only:
+                logger.log("INFO: {} has no assertions defined".format(label))
             continue
 
-        checker = UABundleChecker(label, bundle_apps, charm, assertions,
+        checker = UABundleChecker(bundle_apps, charm, assertions,
                                   args.fce_config, logger)
         matches = checker.has_charm_matches()
-        if not matches:
+        if not args.errors_only and not matches:
             logger.log("INFO: no match found for {} - skipping"
                        .format(checker.charm_regex))
         checker.run_assertions()

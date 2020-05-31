@@ -203,7 +203,12 @@ if $ctg_storage; then
             out="`sed -r \"s/.*(${svc}[[:alnum:]\-]*)\s+.+/\1/g;t;d\" ps| sort| uniq| sed -r 's/^\s+/  /g'`"
             id="`sed -r \"s/.*(${svc}[[:alnum:]\-]*)\s+.+--id\s+([[:digit:]]+)\s+.+/\2/g;t;d\" ps| tr -s '\n' ','| sort| sed -r -e 's/^\s+/  /g' -e 's/,$//g'`"
             [ -z "$out" ] && continue
-            [ "$out" = ceph-osd ] && echo "  - $out ($id)" || echo "  - $out"
+            for osd_id in `echo $id| tr ',' ' '`;do
+                offset=`egrep -n "osd id\s+$osd_id\$" sos_commands/ceph/ceph-volume_lvm_list| cut -f1 -d:`
+                osd_fsid=`tail -n+$offset sos_commands/ceph/ceph-volume_lvm_list| grep "osd fsid"| head -n 1| sed -r 's/.+\s+([[:alnum:]]+)/\1/g'`
+                osd_device=`tail -n+$offset sos_commands/ceph/ceph-volume_lvm_list| grep "devices"| head -n 1| sed -r 's/.+\s+([[:alnum:]\/]+)/\1/g'`
+                echo "  - ceph-osd (id=$osd_id) (fsid=$osd_fsid) (device=$osd_device)"
+            done
         done ) >> $f_output
         [ "$hash" = "`md5sum $f_output`" ] && echo "  - null" >> $f_output
     else
@@ -214,12 +219,25 @@ if $ctg_storage; then
     readarray -t bcacheinfo<<<"`grep . sos_commands/block/ls_-lanR_.sys.block| egrep 'bcache|nvme'| sed -r 's/.+[[:digit:]\:]+\s+([[:alnum:]]+)\s+.+/\1/g'`"
     ((${#bcacheinfo[@]})) && [ -n "${bcacheinfo[0]}" ] || bcacheinfo=( "null" )
     block_root=sos_commands/block/udevadm_info_.dev.
-    for out in ${bcacheinfo[@]}; do
-        if [ -e "${block_root}$out" ]; then
-            echo "/dev/$out (`grep ' disk/by-dname' ${block_root}$out| sed -r 's,.+/(.+),\1,g'`)"
-        else
-            echo $out
+    for bcache_name in ${bcacheinfo[@]}; do
+        backing_dev_fs_uuid=`sed -r 's,^S: bcache/by-uuid/([[:alnum:]\-]+).*,\1,g;t;d' sos_commands/block/udevadm_info_.dev.$bcache_name`
+        f=`grep -l ID_FS_UUID=$backing_dev_fs_uuid ./sos_commands/block/udevadm_info_.dev.*`
+        backing_dev=${f##*.}
+
+        dname=`grep ' disk/by-dname' ${block_root}$bcache_name| sed -r 's,.+/(.+),\1,g'`
+        entry=$bcache_name
+        if [ -e "${block_root}$bcache_name" ]; then
+            entry="/dev/$bcache_name"
         fi
+
+        if [ -n "$dname" ]; then
+            entry="$entry (dname=$dname)"
+            if [ -n "$backing_dev" ]; then
+                entry="$entry (backing=/dev/$backing_dev)"
+            fi
+        fi
+
+        echo $entry
     done| xargs -l -I{} echo "  - {}" >> $f_output
 fi
 

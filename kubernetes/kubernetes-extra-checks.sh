@@ -17,6 +17,7 @@ function  run_sonobuoy() {
   ./sonobuoy delete --all || true
   ./sonobuoy run --skip-preflight --plugin e2e --e2e-parallel ${SONOBUOY_PARALLEL} --mode=non-disruptive-conformance --wait 2>&1
   ./sonobuoy results $(./sonobuoy retrieve) -m dump | ./parse_results.py failed
+  ./sonobuoy delete --all --wait 2>&1
 }
 
 function main() {

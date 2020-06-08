@@ -16,6 +16,7 @@
 # Authors:
 #  - edward.hope-morley@canonical.com
 
+MAX_WAIT_ACTIVE=50
 OPENRC=${1:-""}
 
 test_octavia_lb ()
@@ -65,20 +66,26 @@ test_octavia_lb ()
         read -p "UUID of guest vm with something listening on port 80 (e.g. apache): " member_vm
     fi
 
-    openstack loadbalancer create --name $lb_name --vip-subnet-id private_subnet
+    lb_id=`openstack loadbalancer create --name $lb_name --vip-subnet-id private_subnet -c id -f value`
+    wait_cycle=0
     while true; do
-        status="`openstack loadbalancer show $lb_name -c provisioning_status -f value`"
+        ((wait_cycle++ < MAX_WAIT_ACTIVE)) || { openstack loadbalancer delete --cascade $lb_id; return 1; }
+        status="`openstack loadbalancer show $lb_id -c provisioning_status -f value`"
         [ "$status" = "ACTIVE" ] && break
-        echo "Waiting for $lb_name to be ACTIVE (current=$status)"
+        echo "Waiting for LB $lb_name (uuid=$lb_id) to be ACTIVE (current=$status)"
     done
-    openstack loadbalancer listener create --name test-listener-${test_tag} --protocol HTTP --protocol-port 80 $lb_name
+    openstack loadbalancer listener create --name test-listener-${test_tag} --protocol HTTP --protocol-port 80 $lb_id
+    wait_cycle=0
     while true; do
+        ((wait_cycle++ < MAX_WAIT_ACTIVE)) || { openstack loadbalancer delete --cascade $lb_id; return 1; }
         status="`openstack loadbalancer listener show test-listener-${test_tag} -c provisioning_status -f value`"
         [ "$status" = "ACTIVE" ] && break
-        echo "Waiting for test-listener-${test_tag} to be ACTIVE (current=$status)"
+        echo "Waiting for Listener test-listener-${test_tag} to be ACTIVE (current=$status)"
     done
     openstack loadbalancer pool create --name test-pool-${test_tag} --lb-algorithm ROUND_ROBIN --listener test-listener-${test_tag} --protocol HTTP
+    wait_cycle=0
     while true; do
+        ((wait_cycle++ < MAX_WAIT_ACTIVE)) || { openstack loadbalancer delete --cascade $lb_id; return 1; }
         status="`openstack loadbalancer pool show test-pool-${test_tag} -c provisioning_status -f value`"
         [ "$status"  = "ACTIVE" ] && break
         echo "Waiting for test-pool-${test_tag} to be ACTIVE (current=$status)"
@@ -90,7 +97,9 @@ test_octavia_lb ()
                   -c "Fixed IP Addresses" -f value | sed -r "s/.*ip_address(=|':\s+)'([[:digit:]\.]+)'.*/\2/g")
         member_id=$(openstack loadbalancer member create --subnet-id $subnet \
                     --address $netaddr --protocol-port 80 --format value --column id test-pool-${test_tag})
+        wait_cycle=0
         while true; do
+            ((wait_cycle++ < MAX_WAIT_ACTIVE)) || { openstack loadbalancer delete --cascade $lb_id; return 1; }
             status="`openstack loadbalancer member show -f value -c provisioning_status test-pool-${test_tag} $member_id`"
             [ "$status" = ACTIVE ] && break
             echo "Waiting for member $member_vm ($member_id) to be ACTIVE (current=$status)"
@@ -99,11 +108,13 @@ test_octavia_lb ()
         openstack loadbalancer member list test-pool-${test_tag}
 
         fip=`openstack floating ip create -f value -c floating_ip_address $ext_net`
-        lb_vip_port_id=$(openstack loadbalancer show -f value -c vip_port_id $lb_name)
+        lb_vip_port_id=$(openstack loadbalancer show -f value -c vip_port_id $lb_id)
         openstack floating ip set --port $lb_vip_port_id $fip
         nc -w 5 -vz $fip 80
         rc=$?
     fi
+
+    openstack loadbalancer delete --cascade $lb_id
 
     # PASS
     return $rc

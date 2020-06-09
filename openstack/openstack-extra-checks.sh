@@ -19,6 +19,11 @@
 MAX_WAIT_ACTIVE=50
 OPENRC=${1:-""}
 
+_delete_lb ()
+{
+    openstack loadbalancer delete --cascade $1
+}
+
 test_octavia_lb ()
 {
     ## OCTAVIA LOADBALANCER TEST
@@ -66,28 +71,31 @@ test_octavia_lb ()
         read -p "UUID of guest vm with something listening on port 80 (e.g. apache): " member_vm
     fi
 
-    lb_id=`openstack loadbalancer create --name $lb_name --vip-subnet-id private_subnet -c id -f value`
+    lb_id=`openstack loadbalancer create --name $lb_name --vip-subnet-id $subnet -c id -f value`
     wait_cycle=0
     while true; do
-        ((wait_cycle++ < MAX_WAIT_ACTIVE)) || { openstack loadbalancer delete --cascade $lb_id; return 1; }
+        ((wait_cycle++ < MAX_WAIT_ACTIVE)) || { _delete_lb $lb_id; return 1; }
         status="`openstack loadbalancer show $lb_id -c provisioning_status -f value`"
         [ "$status" = "ACTIVE" ] && break
+        [ "$status" = "ERROR" ] && { _delete_lb $lb_id; return 1; }
         echo "Waiting for LB $lb_name (uuid=$lb_id) to be ACTIVE (current=$status)"
     done
     openstack loadbalancer listener create --name test-listener-${test_tag} --protocol HTTP --protocol-port 80 $lb_id
     wait_cycle=0
     while true; do
-        ((wait_cycle++ < MAX_WAIT_ACTIVE)) || { openstack loadbalancer delete --cascade $lb_id; return 1; }
+        ((wait_cycle++ < MAX_WAIT_ACTIVE)) || { _delete_lb $lb_id; return 1; }
         status="`openstack loadbalancer listener show test-listener-${test_tag} -c provisioning_status -f value`"
         [ "$status" = "ACTIVE" ] && break
+        [ "$status" = "ERROR" ] && { _delete_lb $lb_id; return 1; }
         echo "Waiting for Listener test-listener-${test_tag} to be ACTIVE (current=$status)"
     done
     openstack loadbalancer pool create --name test-pool-${test_tag} --lb-algorithm ROUND_ROBIN --listener test-listener-${test_tag} --protocol HTTP
     wait_cycle=0
     while true; do
-        ((wait_cycle++ < MAX_WAIT_ACTIVE)) || { openstack loadbalancer delete --cascade $lb_id; return 1; }
+        ((wait_cycle++ < MAX_WAIT_ACTIVE)) || { _delete_lb $lb_id; return 1; }
         status="`openstack loadbalancer pool show test-pool-${test_tag} -c provisioning_status -f value`"
         [ "$status"  = "ACTIVE" ] && break
+        [ "$status" = "ERROR" ] && { _delete_lb $lb_id; return 1; }
         echo "Waiting for test-pool-${test_tag} to be ACTIVE (current=$status)"
     done
     openstack loadbalancer healthmonitor create --delay 5 --max-retries 4 --timeout 10 --type HTTP --url-path / test-pool-${test_tag}
@@ -99,9 +107,10 @@ test_octavia_lb ()
                     --address $netaddr --protocol-port 80 --format value --column id test-pool-${test_tag})
         wait_cycle=0
         while true; do
-            ((wait_cycle++ < MAX_WAIT_ACTIVE)) || { openstack loadbalancer delete --cascade $lb_id; return 1; }
+            ((wait_cycle++ < MAX_WAIT_ACTIVE)) || { _delete_lb $lb_id; return 1; }
             status="`openstack loadbalancer member show -f value -c provisioning_status test-pool-${test_tag} $member_id`"
             [ "$status" = ACTIVE ] && break
+            [ "$status" = "ERROR" ] && { _delete_lb $lb_id; return 1; }
             echo "Waiting for member $member_vm ($member_id) to be ACTIVE (current=$status)"
         done
 
@@ -114,7 +123,7 @@ test_octavia_lb ()
         rc=$?
     fi
 
-    openstack loadbalancer delete --cascade $lb_id
+    _delete_lb $lb_id
 
     # PASS
     return $rc
@@ -200,10 +209,10 @@ fi
 
 echo -e "\nRunning Glance image format test"
 test_images_disk_format && \
-    echo "Result: [PASS]" || "Result: [FAIL]"
+    echo "Result: [PASS]" || echo "Result: [FAIL]"
 
 echo -e "\nRunning Octavia LoadBalancer test"
 test_octavia_lb && \
-    echo "Result: [PASS]" || "Result: [FAIL]"
+    echo "Result: [PASS]" || echo "Result: [FAIL]"
 
 echo -e "\nDone."

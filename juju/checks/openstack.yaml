@@ -41,10 +41,10 @@ checks:
       cluster-partition-handling:
         allow_default:
           scope: config
-        eq:
+        neq:
           scope: config
           source: local
-          value: "ignore"
+          value: "autoheal"
   etcd:
     charm: "cs:.*etcd[-]?[0-9]*$"
     assertions:

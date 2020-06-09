@@ -173,6 +173,9 @@ class LocalAssertionHelpers(AssertionBase):
                        self.eq.__name__:
                        {'description':
                         '"Ensure option equal to value"'},
+                       self.neq.__name__:
+                       {'description':
+                        '"Ensure option not equal to value"'},
                        self.isset.__name__:
                        {'description':
                         '"Ensure option has a provided value"',
@@ -207,6 +210,20 @@ class LocalAssertionHelpers(AssertionBase):
         expected = self.atoi(value)
         ret = CheckResult(opt=opt, reason=("value={}".format(current)))
         if current < expected:
+            ret.reason = "value={}, expected={}".format(current, expected)
+            if warn_on_fail:
+                ret.rc = CheckResult.WARN
+            else:
+                ret.rc = CheckResult.FAIL
+
+        return ret
+
+    def neq(self, application, opt, value, warn_on_fail=False):
+        current = application.get('options', [])[opt]
+        current = self.atoi(current)
+        expected = self.atoi(value)
+        ret = CheckResult(opt=opt, reason=("value={}".format(current)))
+        if current == expected:
             ret.reason = "value={}, expected={}".format(current, expected)
             if warn_on_fail:
                 ret.rc = CheckResult.WARN

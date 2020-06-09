@@ -329,8 +329,9 @@ class UABundleChecker(object):
         self.charm_name = None
         self.results = {}
         self.local_assertion_helpers = LocalAssertionHelpers()
-        master_path = os.path.join(self.fce_config, "master.yaml")
-        self.master_assertion_helpers = MasterAssertionHelpers(master_path)
+        if self.fce_config:
+            master_path = os.path.join(self.fce_config, "master.yaml")
+            self.master_assertion_helpers = MasterAssertionHelpers(master_path)
 
     def show_results(self, ignore_pass=False):
         if not self.results:

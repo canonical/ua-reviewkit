@@ -1,7 +1,7 @@
 # See README.md and 'ua-bundle-check.py --schema' for usage and schema details
 checks:
   kubernetes-master:
-    charm: "cs:.*kubernetes-master[-]?[0-9]*$"
+    charm: "kubernetes-master"
     assertions:
       ha:
         assert_ha:
@@ -14,13 +14,13 @@ checks:
           source: local
           value: "RBAC,Node"
   kubeapi-load-balancer:
-    charm: "cs:.*kubeapi-load-balancer[-]?[0-9]*$"
+    charm: "kubeapi-load-balancer"
     assertions:
       ha:
         assert_ha:
           scope: application
   hacluster:
-    charm: "cs:.*hacluster[-]?[-a-z0-9]*$"
+    charm: "hacluster"
     assertions:
       cluster_count:
         allow_default:
@@ -30,13 +30,13 @@ checks:
           source: local
           value: 3
   etcd:
-    charm: "cs:.*etcd[-]?[0-9]*$"
+    charm: "etcd"
     assertions:
       ha:
         assert_ha:
           scope: application
   canal:
-    charm: "cs:.*canal[-]?[0-9]*$"
+    charm: "canal"
     assertions:
       cidr:
         isset:
@@ -44,7 +44,7 @@ checks:
           source: bundle
           value: ""
   vault:
-    charm: "cs:.*vault[-]?[0-9]*$"
+    charm: "vault"
     assertions:
       ha:
         assert_ha:

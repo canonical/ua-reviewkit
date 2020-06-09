@@ -477,7 +477,9 @@ class UABundleChecker(object):
     def get_applications(self):
         self.applications = []
         for app in self.bundle_apps:
-            r = re.match(re.compile(self.charm_regex),
+            regex_str = self.charm_regex
+            regex_tmplt = "^cs:.*{}[-]?[0-9]*$|^[\/\S\-]+{}[-]?[0-9]*$"
+            r = re.match(re.compile(regex_tmplt.format(regex_str, regex_str)),
                          self.bundle_apps[app].get('charm'))
             if r:
                 self.charm_name = r[0]

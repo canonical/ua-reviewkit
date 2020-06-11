@@ -142,6 +142,9 @@ checks:
           scope: config
           source: bundle
       ephemeral-device:
+        isset:
+          scope: config
+          source: bundle
         exclusive_backing_dev:
           description: "ensure that nova instances path (if using bcache) is not backed by same physical disk as rootfs"
           scope: config

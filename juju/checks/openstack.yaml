@@ -120,6 +120,13 @@ checks:
       ha:
         assert_ha:
           scope: application
+      # Check jumbo frames are enabled.
+      global-physnet-mtu:
+        eq:
+          scope: config
+          source: local
+          value: 9000
+          warn-on-fail: true
   nova-cloud-controller:
     charm: "nova-cloud-controller"
     assertions:

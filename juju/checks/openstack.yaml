@@ -149,7 +149,7 @@ checks:
           scope: config
           source: bundle
       ephemeral-device:
-        isset:
+        allow_default:
           scope: config
           source: bundle
         exclusive_backing_dev:

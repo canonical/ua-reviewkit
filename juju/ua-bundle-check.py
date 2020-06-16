@@ -89,6 +89,10 @@ class CheckResult(object):
         return "{}33m{}{}".format(CSI, s, RES)
 
     @property
+    def passed(self):
+        return self.rc == self.PASS
+
+    @property
     def rc_str(self, formatted=False):
         fmt_map = {self.PASS: self._grn,
                    self.WARN: self._ylw,
@@ -161,7 +165,13 @@ class LocalAssertionHelpers(AssertionBase):
 
     def __init__(self):
         super(LocalAssertionHelpers, self).__init__()
-        self.schema = {self.assert_ha.__name__:
+        self.schema = {'allow_default':
+                       {'description':
+                        '"Allow charm default if config not provided."',
+                        'scope': 'config',
+                        'source': 'bundle',
+                        'value': None},
+                       self.assert_ha.__name__:
                        {'description':
                         '"Ensure application has minimum number of units"',
                         'scope': 'application',
@@ -418,47 +428,52 @@ class UABundleChecker(object):
                     if method == defaults_key:
                         continue
 
-                    self.run(opt, method, self.assertions[opt][method])
+                    if not self.run(opt, method):
+                        # stop at the first failure
+                        break
 
     def opt_exists(self, opt):
         return opt in self.bundle_apps[self.app_name].get('options', [])
 
-    def run(self, opt, method, assertion):
+    def run(self, opt, method):
+        assertion = self.assertions[opt][method]
         application = self.bundle_apps[self.app_name]
         warn_on_fail = assertion.get('warn-on-fail', False)
 
         if assertion['scope'] == "application":
-            self.add_result(getattr(self.local_assertion_helpers, method)
-                            (application, warn_on_fail=warn_on_fail))
-            return
+            result = getattr(self.local_assertion_helpers,
+                             method)(application, warn_on_fail=warn_on_fail)
+            self.add_result(result)
+            return result.passed
 
         if not self.opt_exists(opt):
-            self.add_result(CheckResult(CheckResult.FAIL,
-                                        opt=opt, reason="not found"))
-            return
+            result = CheckResult(CheckResult.FAIL, opt=opt,
+                                 reason="not found")
+            self.add_result(result)
+            return result.passed
 
         if assertion["source"] == "local":
             value = assertion["value"]
         elif assertion["source"] == "master":  # config/master.yaml
             if not self.fce_config:
                 reason = "fce config not available - skipping"
-                self.add_result(CheckResult(CheckResult.WARN,
-                                            opt=opt, reason=reason))
-                return
+                result = CheckResult(CheckResult.WARN, opt=opt, reason=reason)
+                self.add_result(result)
+                return result.passed
 
             # assertion["value"] must be python re compatible macthing one
             # substring.
-            self.add_result(
-                getattr(self.master_assertion_helpers,
-                        method)(application, opt, assertion["value"],
-                                warn_on_fail=warn_on_fail))
-            return
+            result = getattr(self.master_assertion_helpers,
+                             method)(application, opt, assertion["value"],
+                                     warn_on_fail=warn_on_fail)
+            self.add_result(result)
+            return result.passed
         elif assertion["source"] == "bucketsconfig":  # bucketsconfig.yaml
             if not self.fce_config:
                 reason = "fce config not available - skipping"
-                self.add_result(CheckResult(CheckResult.WARN,
-                                            opt=opt, reason=reason))
-                return
+                result = CheckResult(CheckResult.WARN, opt=opt, reason=reason)
+                self.add_result(result)
+                return result.passed
 
             value = os.path.join(self.fce_config, "bucketsconfig.yaml")
         elif assertion["source"] == "bundle":
@@ -469,10 +484,11 @@ class UABundleChecker(object):
             raise Exception("Unknown assertion data source '{}'".format(
                 assertion["source"]))
 
-        self.add_result(
-            getattr(self.local_assertion_helpers,
-                    method)(application, opt, value,
-                            warn_on_fail=warn_on_fail))
+        result = getattr(self.local_assertion_helpers,
+                         method)(application, opt, value,
+                                 warn_on_fail=warn_on_fail)
+        self.add_result(result)
+        return result.passed
 
     def get_applications(self):
         self.applications = []

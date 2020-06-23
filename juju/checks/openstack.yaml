@@ -72,12 +72,29 @@ checks:
   ceph-radosgw:
     charm: "ceph-radosgw"
     assertions:
+      ceph-osd-replication-count:
+        allow_default:
+          scope: config
+        eq:
+          scope: config
+          source: local
+          value: 3
   cinder:
     charm: "cinder"
     assertions:
       ha:
         assert_ha:
           scope: application
+  cinder-ceph:
+    charm: "cinder-ceph"
+    assertions:
+      ceph-osd-replication-count:
+        allow_default:
+          scope: config
+        eq:
+          scope: config
+          source: local
+          value: 3
   designate:
     charm: "designate"
     assertions:
@@ -90,6 +107,13 @@ checks:
       ha:
         assert_ha:
           scope: application
+      ceph-osd-replication-count:
+        allow_default:
+          scope: config
+        eq:
+          scope: config
+          source: local
+          value: 3
   gnocchi:
     charm: "gnocchi"
     assertions:
@@ -156,6 +180,13 @@ checks:
           description: "ensure that nova instances path (if using bcache) is not backed by same physical disk as rootfs"
           scope: config
           source: bucketsconfig
+      ceph-osd-replication-count:
+        allow_default:
+          scope: config
+        eq:
+          scope: config
+          source: local
+          value: 3
   octavia:
     charm: "octavia"
     assertions:

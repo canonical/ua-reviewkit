@@ -66,6 +66,13 @@ checks:
   ceph-osd:
     charm: "ceph-osd"
     assertions:
+      bluestore-block-wal-size:
+        allow_default:
+          scope: config
+        gte:
+          scope: config
+          source: local
+          value: 1G
   ceph-proxy:
     charm: "ceph-proxy"
     assertions:

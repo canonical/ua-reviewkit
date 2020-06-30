@@ -38,6 +38,8 @@ UA Juju bundle config verification
  * assertions_sha1={}
 """
 HEADER_TEMPLATE += "=" * 80
+# e.g. cs:barbican-vault-123 or ./barbican-vault
+CHARM_REGEX_TEMPLATE = "^cs:(~.+/)?{}[-]?[0-9]*$|^[\/\.]*{}$"
 
 
 class Logger(object):
@@ -156,7 +158,7 @@ class AssertionBase(object):
         if 'num_units' in application:
             return application['num_units']
         else:
-            return application['scale']
+            return application.get('scale')
 
         return -1
 
@@ -494,9 +496,9 @@ class UABundleChecker(object):
         self.applications = []
         for app in self.bundle_apps:
             regex_str = self.charm_regex
-            regex_tmplt = "^cs:.*{}[-]?[0-9]*$|^[\/\S\-]+{}[-]?[0-9]*$"
-            r = re.match(re.compile(regex_tmplt.format(regex_str, regex_str)),
-                         self.bundle_apps[app].get('charm'))
+            charm = self.bundle_apps[app].get('charm')
+            r = re.compile(CHARM_REGEX_TEMPLATE.format(regex_str,
+                                                       regex_str)).match(charm)
             if r:
                 self.charm_name = r[0]
                 self.applications.append(app)

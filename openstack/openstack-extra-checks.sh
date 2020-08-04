@@ -151,8 +151,8 @@ test_images_disk_format()
     if ((${#clients[@]})) && [ -n "${clients[0]}" ]; then
         raw_required=false
         for client in ${clients[@]}; do
-            if [ "$client" = "nova-compute" ] ||
-                   [ "$client" = "cinder-ceph" ]; then
+            if [[ $client =~ nova-compute.* ]] ||
+                   [[ $client =~ cinder-ceph.* ]]; then
                 raw_required=true
                 break
             fi
@@ -181,6 +181,8 @@ EOF
 
                 rc=1
             fi
+        else
+            echo "No hard requirement for raw images - skipping check"
         fi
     fi
 

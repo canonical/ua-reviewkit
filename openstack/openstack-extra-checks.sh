@@ -119,8 +119,19 @@ test_octavia_lb ()
         fip=`openstack floating ip create -f value -c floating_ip_address $ext_net`
         lb_vip_port_id=$(openstack loadbalancer show -f value -c vip_port_id $lb_id)
         openstack floating ip set --port $lb_vip_port_id $fip
-        nc -w 5 -vz $fip 80
-        rc=$?
+        # NOTE: floating ip may not be immediately available
+        retry_count=10
+        while ! ((rc)); do
+            nc -w 5 -vz $fip 80
+            rc=$?
+            if ((rc)) && ((retry_count>0)); then  
+                rc=0
+                ((retry_count--))
+                sleep 1
+            else
+                break
+            fi
+        done
     fi
 
     _delete_lb $lb_id

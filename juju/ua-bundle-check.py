@@ -71,11 +71,10 @@ class CheckResult(object):
               WARN: 'WARN',
               FAIL: 'FAIL'}
 
-    def __init__(self, rc=PASS, opt=None, info=None, reason=None):
+    def __init__(self, rc=PASS, opt=None, reason=None):
         self.rc = rc
         self.opt = opt
         self.reason = reason
-        self.info = info
         self.formatted = True
 
     @staticmethod
@@ -165,14 +164,22 @@ class AssertionBase(object):
 
 class LocalAssertionHelpers(AssertionBase):
 
-    def __init__(self):
+    def __init__(self, bundle_apps):
         super(LocalAssertionHelpers, self).__init__()
+        self.bundle_apps = bundle_apps
         self.schema = {'allow_default':
                        {'description':
                         '"Allow charm default if config not provided."',
                         'scope': 'config',
                         'source': 'bundle',
-                        'value': None},
+                        'value': None,
+                        'override_method': True},
+                       self.skip_if_charm_exists.__name__:
+                       {'description':
+                        '"Skip check if charm exists"',
+                        'source': 'bundle',
+                        'value': None,
+                        'override_method': True},
                        self.assert_ha.__name__:
                        {'description':
                         '"Ensure application has minimum number of units"',
@@ -193,6 +200,31 @@ class LocalAssertionHelpers(AssertionBase):
                         '"Ensure option has a provided value"',
                         'source': 'bundle',
                         'value': None}}
+
+    def allow_default(self, application, opt, value, warn_on_fail=False):
+        ret = CheckResult(opt=opt)
+        if opt not in application.get('options', []):
+            ret.reason = "using charm config default"
+            return ret
+
+        ret.rc = CheckResult.FAIL
+        return ret
+
+    def skip_if_charm_exists(self, application, opt, value,
+                             warn_on_fail=False):
+        ret = CheckResult()
+        regex_str = value
+        for app in self.bundle_apps:
+            charm = self.bundle_apps[app].get('charm')
+            r = re.compile(CHARM_REGEX_TEMPLATE.format(regex_str,
+                                                       regex_str)).match(charm)
+            if r:
+                ret.reason = ("charm {} found in bundle - skipping check".
+                              format(charm))
+                return ret
+
+        ret.rc = CheckResult.FAIL
+        return ret
 
     @staticmethod
     def assertion_opts_common():
@@ -316,10 +348,20 @@ class LocalAssertionHelpers(AssertionBase):
 class MasterAssertionHelpers(LocalAssertionHelpers):
 
     def __init__(self, master_path):
-        super(MasterAssertionHelpers, self).__init__()
+        super(MasterAssertionHelpers, self).__init__(bundle_apps=None)
         self.master_path = master_path
 
     def eq(self, application, opt, value, warn_on_fail=False):
+        # FIXME(hopem): this check is not currently viable since it requires
+        # checking many different sources and cross-referencing them to ensure
+        # they are correct e.g. kernel_opts can be provided is maas tags or
+        # boot defaults or the sysconfig charm AND they can be specified in
+        # maas with a meaning that applies to multiple charms. So for now I'm
+        # disabling this and will consider either removing altogether or
+        # finding a way to make it meaningfil.
+        ret = CheckResult(CheckResult.WARN, opt=opt)
+        ret.reason = ("check disabled - please check this one manually")
+        return ret
         master_value = None
 
         with open(self.master_path) as fd:
@@ -357,7 +399,7 @@ class UABundleChecker(object):
         self.logger = logger
         self.charm_name = None
         self.results = {}
-        self.local_assertion_helpers = LocalAssertionHelpers()
+        self.local_assertion_helpers = LocalAssertionHelpers(bundle_apps)
         if self.fce_config:
             master_path = os.path.join(self.fce_config, "master.yaml")
             self.master_assertion_helpers = MasterAssertionHelpers(master_path)
@@ -401,6 +443,34 @@ class UABundleChecker(object):
         else:
             results[result.rc_str] = [result]
 
+    def get_overrides(self):
+        """
+        If the application has assertion methods that are overrides i.e. if
+        any one passes it superscedes all others, process those first and
+        mark them so that they don't get executed again.
+        """
+        _methods = []
+        schema = LocalAssertionHelpers(None).schema
+        for method in schema:
+            if schema[method].get('override_method'):
+                _methods.append(method)
+
+        overrides = {}
+        for opt in self.assertions:
+            for method in _methods:
+                if method in self.assertions[opt]:
+                    if opt in overrides:
+                        overrides[opt][method] = False
+                    else:
+                        overrides[opt] = {method: False}
+
+                    passed = self.run(opt, method, allow_missing=True,
+                                      ignore_fails=True)
+                    if passed:
+                        overrides[opt][method] = True
+
+        return overrides
+
     def run_assertions(self):
         if not self.assertions:
             self.add_result(CheckResult(CheckResult.FAIL,
@@ -413,21 +483,14 @@ class UABundleChecker(object):
         for app in self.applications:
             self.app_name = app
             defaults_key = "allow_default"
+            overrides = self.get_overrides()
+
             for opt in self.assertions:
-                if defaults_key in self.assertions[opt]:
-                    # if opt is not set in bundle and we have allowed charm
-                    # default then we log a PASS and continue to the next opt
-                    # in the assertions list.
-                    if not self.opt_exists(opt):
-                        reason = "using charm default"
-                        self.add_result(CheckResult(opt=opt, reason=reason))
-                        continue
-                    else:
-                        # otherwise we continue with asserting the value set.
-                        pass
+                if any(overrides.get(opt, {}).values()):
+                    continue
 
                 for method in self.assertions[opt]:
-                    if method == defaults_key:
+                    if method in overrides.get(opt, {}):
                         continue
 
                     if not self.run(opt, method):
@@ -437,26 +500,28 @@ class UABundleChecker(object):
     def opt_exists(self, opt):
         return opt in self.bundle_apps[self.app_name].get('options', [])
 
-    def run(self, opt, method):
+    def run(self, opt, method, allow_missing=False, ignore_fails=False):
         assertion = self.assertions[opt][method]
         application = self.bundle_apps[self.app_name]
         warn_on_fail = assertion.get('warn-on-fail', False)
 
-        if assertion['scope'] == "application":
+        assertion_scope = assertion.get('scope', 'config')
+        if assertion_scope == "application":
             result = getattr(self.local_assertion_helpers,
                              method)(application, warn_on_fail=warn_on_fail)
             self.add_result(result)
             return result.passed
 
-        if not self.opt_exists(opt):
+        if not allow_missing and not self.opt_exists(opt):
             result = CheckResult(CheckResult.FAIL, opt=opt,
                                  reason="not found")
             self.add_result(result)
             return result.passed
 
-        if assertion["source"] == "local":
-            value = assertion["value"]
-        elif assertion["source"] == "master":  # config/master.yaml
+        assertion_source = assertion.get('source', 'local')
+        if assertion_source == "local":
+            value = assertion.get('value')
+        elif assertion_source == "master":  # config/master.yaml
             if not self.fce_config:
                 reason = "fce config not available - skipping"
                 result = CheckResult(CheckResult.WARN, opt=opt, reason=reason)
@@ -470,7 +535,7 @@ class UABundleChecker(object):
                                      warn_on_fail=warn_on_fail)
             self.add_result(result)
             return result.passed
-        elif assertion["source"] == "bucketsconfig":  # bucketsconfig.yaml
+        elif assertion_source == "bucketsconfig":  # bucketsconfig.yaml
             if not self.fce_config:
                 reason = "fce config not available - skipping"
                 result = CheckResult(CheckResult.WARN, opt=opt, reason=reason)
@@ -478,18 +543,21 @@ class UABundleChecker(object):
                 return result.passed
 
             value = os.path.join(self.fce_config, "bucketsconfig.yaml")
-        elif assertion["source"] == "bundle":
+        elif assertion_source == "bundle":
             # value is ignored, ensure that settings is non-null
             # only supported by isset() currently
             value = None
         else:
             raise Exception("Unknown assertion data source '{}'".format(
-                assertion["source"]))
+                assertion_source))
 
         result = getattr(self.local_assertion_helpers,
                          method)(application, opt, value,
                                  warn_on_fail=warn_on_fail)
-        self.add_result(result)
+
+        if result.passed or not ignore_fails:
+            self.add_result(result)
+
         return result.passed
 
     def get_applications(self):
@@ -526,7 +594,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.schema:
-        asshelper = LocalAssertionHelpers()
+        asshelper = LocalAssertionHelpers(None)
         print("# Assertion schema generated using 'ua-bundle-check.py "
               "--schema'")
         print("checks:")

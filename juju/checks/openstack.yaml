@@ -170,6 +170,8 @@ checks:
       vcpu-pin-set:
         allow_default:
           scope: config
+        skip_if_charm_exists:
+          value: sysconfig
         eq:
           scope: config
           source: master

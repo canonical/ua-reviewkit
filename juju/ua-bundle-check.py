@@ -632,7 +632,8 @@ if __name__ == "__main__":
         print("ERROR: one of --bundle or --fce-config is required")
         sys.exit(1)
 
-    checks_path = 'checks/{}.yaml'.format(args.type)
+    script_root = os.path.dirname(__file__)
+    checks_path = os.path.join(script_root, 'checks/{}.yaml'.format(args.type))
     checks_sha = hashlib.sha1()
     checks_sha.update(open(checks_path, 'rb').read())
 

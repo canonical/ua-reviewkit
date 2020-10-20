@@ -170,7 +170,7 @@ test_images_disk_format()
         done
         if $raw_required; then
             openstack image list --long -c ID -c 'Disk Format' -f value > $ftmp
-            if ((`sort -u -k 2 $ftmp| wc -l` > 1)); then
+            if ((`awk '{print $2}' $ftmp| sort -u| wc -l` > 1)); then
 cat << EOF
 WARNING: not all images in Glance have disk_format=raw
 
@@ -184,12 +184,12 @@ For more information on why this is important please see the following article:
 
     https://support.canonical.com/ua/s/article/openstack-boot-image-considerations
 EOF
-                echo -e "\nImage format details:\n"
-                readarray -t formats<<<"`sort -u -k 2 $ftmp| awk '{print $2}'`"
+                echo -e "\nImage format details:"
+                readarray -t formats<<<"`sort -k 2 $ftmp| awk '{print $2}'| uniq`"
                 for fmt in ${formats[@]}; do
                     awk "\$2==\"$fmt\" {print \$2}" $ftmp| sort| uniq -c
                 done
-
+                echo ""
                 rc=1
             fi
         else

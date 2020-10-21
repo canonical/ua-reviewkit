@@ -238,3 +238,15 @@ checks:
           scope: config
           source: local
           value: 3
+  ovn-chassis:
+    charm: "ovn-chassis"
+  ovn-central:
+    charm: "ovn-central"
+  neutron-api-plugin-ovn:
+    charm: "neutron-api-plugin-ovn"
+    assertions:
+      dns-servers:
+        isset:
+          scope: config
+          source: bundle
+

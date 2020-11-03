@@ -127,17 +127,19 @@ if [ -n "$member_vm" ]; then
     openstack floating ip set --port $lb_vip_port_id $fip
     # NOTE: floating ip may not be immediately available
     retry_count=10
-    while ! ((rc)); do
+    rc=-1
+    while ((rc)); do
         rc=0
         nc -w 5 -vz $fip 80 || rc=$?
-        if ((rc)) && ((retry_count>0)); then  
-            rc=0
-            ((retry_count--))
-            echo "retrying.."
-            sleep 1
-        else
-            echo "ERROR: max retries reached, could not connect to lb fip"
-            break
+        if ((rc)); then
+            if ((retry_count)); then
+                ((retry_count--))
+                echo "retrying.."
+                sleep 1
+            else
+                echo "ERROR: max retries reached, could not connect to lb fip"
+                break
+            fi
         fi
     done
 fi

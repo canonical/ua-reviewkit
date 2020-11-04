@@ -44,7 +44,8 @@ if ((${#clients[@]})) && [ -n "${clients[0]}" ]; then
     done
     if $raw_required; then
         openstack image list --long -c ID -c 'Disk Format' -f value > $ftmp
-        if ((`awk '{print $2}' $ftmp| sort -u| wc -l` > 1)); then
+        num_images=`awk '{print $2}' $ftmp| sort -u| wc -l`
+        if ((num_images > 1)) || ((num_images == 1)) && [[ "`awk '{print $2}' $ftmp| sort -u`" != raw ]]; then
 cat << EOF
 WARNING: not all images in Glance have disk_format=raw
 

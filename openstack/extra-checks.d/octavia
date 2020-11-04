@@ -80,7 +80,7 @@ echo "Creating loadbalancer $lb_name..."
 lb_id=`openstack loadbalancer create --name $lb_name --vip-subnet-id $subnet -c id -f value`
 wait_cycle=0
 while true; do
-    ((wait_cycle++ < MAX_WAIT_ACTIVE)) || active_wait_timeout
+    ((wait_cycle++ < MAX_WAIT_ACTIVE)) || active_wait_timeout $lb_id
     status="`openstack loadbalancer show $lb_id -c provisioning_status -f value`"
     [ "$status" = "ACTIVE" ] && break
     [ "$status" = "ERROR" ] && { _delete_lb $lb_id; exit 1; }

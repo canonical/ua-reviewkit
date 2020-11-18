@@ -139,8 +139,8 @@ checks:
       ha:
         assert_ha:
           scope: application
-  manilla:
-    charm: "manilla"
+  manila:
+    charm: "manila"
     assertions:
       ha:
         assert_ha:

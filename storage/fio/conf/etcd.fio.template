@@ -1,0 +1,7 @@
+[etcd-like]
+ iodepth=1
+ blocksize=2300
+ size=22m
+ fdatasync=1
+ ioengine=sync
+ direct=0

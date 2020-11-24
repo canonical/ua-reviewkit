@@ -12,6 +12,10 @@ declare -a TEST_CLASSES=()
 declare -A CUSTOM_JOB_OPTS=(
     [--blocksize]=
     [--iodepth]=
+    [--size]=
+    [--fdatasync]=
+    [--ioengine]=
+    [--direct]=
 )
 
 readarray AVAILABLE_JOBS<<<"`ls conf| sed -r 's/^(.+)\.fio\.template$/\1/g;t;d'| egrep -v 'global|custom'`"
@@ -72,7 +76,7 @@ while (($#)); do
         --dry-run)
             OPT_DRY_RUN=true
             ;;
-        --blocksize|--iodepth)
+        --blocksize|--iodepth|--fdatasync|--size|--ioengine|--direct)
             CUSTOM_JOB_OPTS[$1]=$2
             shift
             ;;
@@ -203,6 +207,10 @@ for class in ${TEST_CLASSES[@]}; do
         if has_custom_job_opts; then
             sed -r -i "s/__BLOCKSIZE__/${CUSTOM_JOB_OPTS[--blocksize]}/g" $results_dir/$jobdir/$config
             sed -r -i "s/__IODEPTH__/${CUSTOM_JOB_OPTS[--iodepth]}/g" $results_dir/$jobdir/$config
+            sed -r -i "s/__SIZE__/${CUSTOM_JOB_OPTS[--size]}/g" $results_dir/$jobdir/$config
+            sed -r -i "s/__FDATASYNC__/${CUSTOM_JOB_OPTS[--fdatasync]}/g" $results_dir/$jobdir/$config
+            sed -r -i "s/__IOENGINE__/${CUSTOM_JOB_OPTS[--ioengine]}/g" $results_dir/$jobdir/$config
+            sed -r -i "s/__DIRECT__/${CUSTOM_JOB_OPTS[--direct]}/g" $results_dir/$jobdir/$config
         fi
 
         sed -r -i "s/__TESTNAME__/$TESTNAME/g" $results_dir/$jobdir/$config

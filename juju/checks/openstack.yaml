@@ -181,6 +181,7 @@ checks:
         isset:
           scope: config
           source: bundle
+          warn-on-fail: true
       ephemeral-device:
         allow_default:
           scope: config

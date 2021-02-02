@@ -11,11 +11,17 @@ checks:
           scope: config
           source: local
           value: 6G
+          description: |
+            DB must be allowed to cache as useful amount of data corresponding
+            to the amount of memory available to the unit.
       max-connections:
         gte:
           scope: config
           source: local
           value: 2000
+          description: |
+            Openstack services will allow pool a set of open connections so
+            this value must be high enough to accomodate your deployment.
   mysql-innodb-cluster:
     charm: "mysql-innodb-cluster"
     assertions:
@@ -27,11 +33,17 @@ checks:
           scope: config
           source: local
           value: 6G
+          description: |
+            DB must be allowed to cache as useful amount of data corresponding
+            to the amount of memory available to the unit.
       max-connections:
         gte:
           scope: config
           source: local
           value: 2000
+          description: |
+            Openstack services will allow pool a set of open connections so
+            this value must be high enough to accomodate your deployment.
   rabbitmq-server:
     charm: "rabbitmq-server"
     assertions:
@@ -45,6 +57,10 @@ checks:
           scope: config
           source: local
           value: "autoheal"
+          description: |
+            Due to the potential for adverse affects resulting from the use of
+            "autoheal", we recommend not using it and ideally using
+            "pause-minority".
   etcd:
     charm: "etcd"
     assertions:
@@ -151,13 +167,16 @@ checks:
       ha:
         assert_ha:
           scope: application
-      # Check jumbo frames are enabled.
       global-physnet-mtu:
         eq:
           scope: config
           source: local
           value: 9000
           warn-on-fail: true
+          description: |
+            While not a hard requirment, we currently recommend using Jumbo
+            frames for this setting so as to allow enough flexibility for
+            all neutron networks.
   nova-cloud-controller:
     charm: "nova-cloud-controller"
     assertions:
@@ -182,14 +201,20 @@ checks:
           scope: config
           source: bundle
           warn-on-fail: true
+          description: |
+            This should be set to the highest available cpu model across all
+            nodes to avoid problems cpu feature incompatibility when
+            performing live-migrations.
       ephemeral-device:
         allow_default:
           scope: config
           source: bundle
         exclusive_backing_dev:
-          description: "ensure that nova instances path (if using bcache) is not backed by same physical disk as rootfs"
           scope: config
           source: bucketsconfig
+          description: |
+            Ensure that nova instances path (if using bcache) is not backed by
+            the same physical disk used for the rootfs.
       ceph-osd-replication-count:
         allow_default:
           scope: config

@@ -22,3 +22,8 @@ You can then run the checks in two different ways:
     The UA_OS_CHECKS_VM_UUID must be ACTIVE and have something listening on port 80 e.g.
     apache2 so that it can be used for a loadbalancer test.
 
+
+IMPORTANT: please ensure when you run this that you have the correct Juju model selected. Most deployments will have e.g. a controller model, LMA model and an Openstack model (plus others). You will need to be sure that your openstack model is selected before running these tests e.g.
+
+  * juju list-models
+  * juju switch <model-name>

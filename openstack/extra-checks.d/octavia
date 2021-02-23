@@ -16,7 +16,9 @@
 # Authors:
 #  - edward.hope-morley@canonical.com
 
-MAX_WAIT_ACTIVE=50
+# allow env override
+MAX_WAIT_ACTIVE=${MAX_WAIT_ACTIVE:-120}
+MAX_WAIT_FIP=${MAX_WAIT_FIP:-30}
 
 _delete_lb ()
 {
@@ -126,7 +128,7 @@ if [ -n "$member_vm" ]; then
     lb_vip_port_id=$(openstack loadbalancer show -f value -c vip_port_id $lb_id)
     openstack floating ip set --port $lb_vip_port_id $fip
     # NOTE: floating ip may not be immediately available
-    retry_count=10
+    retry_count=$MAX_WAIT_FIP
     rc=-1
     while ((rc)); do
         rc=0

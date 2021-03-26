@@ -6,6 +6,10 @@ FORCE_YES=false
 NO_CLEANUP=false
 WILDCARD="all"
 NO_TARBALL=false
+# takes a lot less time to write the same amount if data with 4m vs 4k so use a
+# smaller ramp_time.
+declare -A RAMP_TIMES=( [4K]=30 [4M]=5 )
+
 declare -a TEST_JOBS=()
 declare -a TEST_CLASSES=()
 
@@ -48,6 +52,10 @@ OPTIONS:
     --iodepth
         Custom iodepth. If this is provided you also need to provide a
         blocksize with --blocksize. This overrides --job.
+    --ramp-time-4k
+        Override 4k block size ramp_time (default=${RAMP_TIMES[4K]}).
+    --ramp-time-4m
+        Override 4m block size ramp_time (default=${RAMP_TIMES[4M]}).
     --job
         Test job to run, Available options are:
 `echo "${AVAILABLE_JOBS[@]}"| xargs -l -I{} echo -e "\t - {}"`
@@ -75,6 +83,14 @@ while (($#)); do
     case $1 in
         --dry-run)
             OPT_DRY_RUN=true
+            ;;
+        --ramp-time-4k)
+            RAMP_TIMES[4K]=$2
+            shift
+            ;;
+        --ramp-time-4m)
+            RAMP_TIMES[4M]=$2
+            shift
             ;;
         --blocksize|--iodepth|--fdatasync|--size|--ioengine|--direct)
             CUSTOM_JOB_OPTS[$1]=$2
@@ -218,6 +234,8 @@ for class in ${TEST_CLASSES[@]}; do
         # copy common global config into job dir
         cp conf/common-global.fio.template $results_dir/$jobdir/common-global.fio
         sed -r -i "s/__TESTNAME__/${TESTNAME}-${JOBDIR_PREFIX}/g" $results_dir/$jobdir/common-global.fio
+        ramp_time=${RAMP_TIMES[${job^^}]:-${RAMP_TIMES[4M]}}
+        sed -r -i "s/__RAMP_TIME__/$ramp_time/g" $results_dir/$jobdir/common-global.fio
 
         header $TESTNAME $job $jobdir | tee -a $logfile
         (

@@ -9,3 +9,4 @@ sync=1
 ramp_time=__RAMP_TIME__
 runtime=300
 log_avg_msec=10
+time_based

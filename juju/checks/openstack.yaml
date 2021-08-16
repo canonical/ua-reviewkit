@@ -51,12 +51,10 @@ checks:
         assert_ha:
           scope: application
       cluster-partition-handling:
-        allow_default:
-          scope: config
-        neq:
+        eq:
           scope: config
           source: local
-          value: "autoheal"
+          value: "pause_minority"
           description: |
             Due to the potential for adverse affects resulting from the use of
             "autoheal", we recommend not using it and ideally using

@@ -39,7 +39,8 @@ UA Juju bundle config verification
 """
 HEADER_TEMPLATE += "=" * 80
 # e.g. cs:barbican-vault-123 or ./barbican-vault
-CHARM_REGEX_TEMPLATE = "^cs:(~.+/)?{}[-]?[0-9]*$|^[\/\.]*{}$"
+CHARM_REGEX_TEMPLATE = "^cs:(~.+/)?{}[-]?[0-9]*$|" \
+                       "^[\/\.]*{}$|^(\.?|~)(/[^/ ]*)+/?{}$"
 
 
 class Logger(object):
@@ -216,8 +217,8 @@ class LocalAssertionHelpers(AssertionBase):
         regex_str = value
         for app in self.bundle_apps:
             charm = self.bundle_apps[app].get('charm')
-            r = re.compile(CHARM_REGEX_TEMPLATE.format(regex_str,
-                                                       regex_str)).match(charm)
+            r = re.compile(CHARM_REGEX_TEMPLATE.format(
+                regex_str, regex_str, regex_str)).match(charm)
             if r:
                 ret.reason = ("charm {} found in bundle - skipping check".
                               format(charm))
@@ -565,8 +566,8 @@ class UABundleChecker(object):
         for app in self.bundle_apps:
             regex_str = self.charm_regex
             charm = self.bundle_apps[app].get('charm')
-            r = re.compile(CHARM_REGEX_TEMPLATE.format(regex_str,
-                                                       regex_str)).match(charm)
+            r = re.compile(CHARM_REGEX_TEMPLATE.format(
+                regex_str, regex_str, regex_str)).match(charm)
             if r:
                 self.charm_name = r[0]
                 self.applications.append(app)

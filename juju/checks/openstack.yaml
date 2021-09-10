@@ -175,6 +175,13 @@ checks:
             While not a hard requirment, we currently recommend using Jumbo
             frames for this setting so as to allow enough flexibility for
             all neutron networks.
+  neutron-gateway:
+    charm: "neutron-gateway"
+    assertions:
+      ha:
+        assert_ha:
+          scope: application
+          warn-on-fail: true
   nova-cloud-controller:
     charm: "nova-cloud-controller"
     assertions:

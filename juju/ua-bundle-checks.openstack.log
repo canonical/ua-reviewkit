@@ -1,0 +1,56 @@
+================================================================================
+UA Juju bundle config verification
+ * 2021-08-16 11:53:05.611345
+ * type=openstack
+ * bundle=./example-fail-bundle.yaml
+ * bundle_sha1=5ce0f6dbcedbffea84ec96454151b694b033b1b8
+ * assertions_sha1=a8cf3fc907e19842e11ea9b8bad5f192352538ea
+================================================================================
+INFO: no match found for mysql-innodb-cluster - skipping
+INFO: no match found for etcd - skipping
+INFO: no match found for barbican - skipping
+INFO: no match found for ceph-mon - skipping
+INFO: no match found for ceph-osd - skipping
+INFO: ceph-proxy has no assertions defined
+INFO: no match found for ceph-radosgw - skipping
+INFO: no match found for cinder - skipping
+INFO: no match found for cinder-ceph - skipping
+INFO: no match found for designate - skipping
+INFO: no match found for glance - skipping
+INFO: no match found for gnocchi - skipping
+INFO: no match found for heat - skipping
+INFO: no match found for keystone - skipping
+INFO: no match found for manila - skipping
+INFO: no match found for neutron-api - skipping
+INFO: no match found for nova-cloud-controller - skipping
+INFO: no match found for octavia - skipping
+INFO: no match found for placement - skipping
+INFO: no match found for swift-proxy - skipping
+INFO: no match found for sysconfig - skipping
+INFO: no match found for vault - skipping
+INFO: no match found for hacluster - skipping
+INFO: ovn-chassis has no assertions defined
+INFO: ovn-central has no assertions defined
+INFO: no match found for neutron-api-plugin-ovn - skipping
+
+Results:
+=> application 'mysql'
+[FAIL] HA (>=3) (not enough units (value=1, expected='>=3'))
+[FAIL] innodb-buffer-pool-size (value=1000000000, expected=6442450944)
+[FAIL] max-connections (value=1000, expected=2000)
+=> application 'rabbitmq-server'
+[FAIL] HA (>=3) (not enough units (value=1, expected='>=3'))
+[FAIL] cluster-partition-handling (value=autoheal, expected=pause_minority)
+=> application 'rabbitmq-server-alt'
+[FAIL] HA (>=3) (not enough units (value=1, expected='>=3'))
+[FAIL] cluster-partition-handling (not found)
+=> application 'nova-compute'
+[PASS] ephemeral-device (using charm config default)
+[PASS] ceph-osd-replication-count (using charm config default)
+[WARN] vcpu-pin-set (fce config not available - skipping)
+[FAIL] cpu-model (not found)
+
+Summary:
+ PASS: 2
+ WARN: 1
+ FAIL: 8

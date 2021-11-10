@@ -29,4 +29,3 @@ checks:
           scope: config
           source: local
           value: 3
-

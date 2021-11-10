@@ -1,0 +1,151 @@
+#!/bin/bash -eu
+# Copyright 2020 Canonical Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Authors:
+#  - edward.hope-morley@canonical.com
+
+# allow env override
+MAX_WAIT_ACTIVE=${MAX_WAIT_ACTIVE:-120}
+MAX_WAIT_FIP=${MAX_WAIT_FIP:-30}
+
+_delete_lb ()
+{
+    openstack loadbalancer delete --cascade $1
+}
+
+active_wait_timeout ()
+{
+    local lb_id=$1
+    echo "ERROR: reached MAX_WAIT_ACTIVE ($MAX_WAIT_ACTIVE)"
+    _delete_lb $lb_id
+    exit 1
+}
+
+## OCTAVIA LOADBALANCER TEST
+#
+# This test requires project net, subnet, ext net and vm. These can be
+# provided using env vars otherwise input is requested.
+#
+# export UA_OS_CHECKS_PROJECT_NET=<tenant network name or uuid>
+# export UA_OS_CHECKS_PROJECT_SUBNET=<tenant subnet name or uuid>
+# export UA_OS_CHECKS_EXT_NET=<external net name or uuid>
+# export UA_OS_CHECKS_VM_UUID=<vm uuid>
+
+rc=0
+net=
+subnet=
+ext_net=
+member_vm=
+test_tag=`uuidgen`
+lb_name=test-lb-${test_tag}
+
+exists="`juju status --format=json| jq '.applications| to_entries[]| select(.value.charm| test(\".+octavia.+\"))'`"
+if [ -z "$exists" ]; then
+    echo "INFO: no octavia found - skipping test"
+    exit 0
+fi
+
+if [ -n "${UA_OS_CHECKS_PROJECT_NET:-}" ]; then
+    net=$UA_OS_CHECKS_PROJECT_NET
+else
+    read -p "Tenant network name to use for Octavia LB test: " net
+fi
+if [ -n "${UA_OS_CHECKS_PROJECT_SUBNET:-}" ]; then
+    subnet=$UA_OS_CHECKS_PROJECT_SUBNET
+else
+    read -p "Tenant subnet name to use for Octavia LB test: " subnet
+fi
+if [ -n "${UA_OS_CHECKS_EXT_NET:-}" ]; then
+    ext_net=$UA_OS_CHECKS_EXT_NET
+else
+    read -p "External net to use for Octavia LB test: " ext_net
+fi
+if [ -n "${UA_OS_CHECKS_VM_UUID:-}" ]; then
+    member_vm=$UA_OS_CHECKS_VM_UUID
+else
+    read -p "UUID of guest vm with something listening on port 80 (e.g. apache): " member_vm
+fi
+
+echo "Creating loadbalancer $lb_name..."
+lb_id=`openstack loadbalancer create --name $lb_name --vip-subnet-id $subnet -c id -f value`
+wait_cycle=0
+while true; do
+    ((wait_cycle++ < MAX_WAIT_ACTIVE)) || active_wait_timeout $lb_id
+    status="`openstack loadbalancer show $lb_id -c provisioning_status -f value`"
+    [ "$status" = "ACTIVE" ] && break
+    [ "$status" = "ERROR" ] && { _delete_lb $lb_id; exit 1; }
+    echo "Waiting for LB $lb_name (uuid=$lb_id) to be ACTIVE (current=$status)"
+done
+openstack loadbalancer listener create --name test-listener-${test_tag} --protocol HTTP --protocol-port 80 $lb_id
+wait_cycle=0
+while true; do
+    ((wait_cycle++ < MAX_WAIT_ACTIVE)) || active_wait_timeout $lb_id
+    status="`openstack loadbalancer listener show test-listener-${test_tag} -c provisioning_status -f value`"
+    [ "$status" = "ACTIVE" ] && break
+    [ "$status" = "ERROR" ] && { _delete_lb $lb_id; exit 1; }
+    echo "Waiting for Listener test-listener-${test_tag} to be ACTIVE (current=$status)"
+done
+openstack loadbalancer pool create --name test-pool-${test_tag} --lb-algorithm ROUND_ROBIN --listener test-listener-${test_tag} --protocol HTTP
+wait_cycle=0
+while true; do
+    ((wait_cycle++ < MAX_WAIT_ACTIVE)) || active_wait_timeout $lb_id
+    status="`openstack loadbalancer pool show test-pool-${test_tag} -c provisioning_status -f value`"
+    [ "$status"  = "ACTIVE" ] && break
+    [ "$status" = "ERROR" ] && { _delete_lb $lb_id; exit 1; }
+    echo "Waiting for test-pool-${test_tag} to be ACTIVE (current=$status)"
+done
+openstack loadbalancer healthmonitor create --delay 5 --max-retries 4 --timeout 10 --type HTTP --url-path / test-pool-${test_tag}
+openstack loadbalancer healthmonitor list
+if [ -n "$member_vm" ]; then
+    netaddr=$(openstack port list --server $member_vm --network $net \
+              -c "Fixed IP Addresses" -f value | sed -r "s/.*ip_address(=|':\s+)'([[:digit:]\.]+)'.*/\2/g")
+    member_id=$(openstack loadbalancer member create --subnet-id $subnet \
+                --address $netaddr --protocol-port 80 --format value --column id test-pool-${test_tag})
+    wait_cycle=0
+    while true; do
+        ((wait_cycle++ < MAX_WAIT_ACTIVE)) || active_wait_timeout $lb_id
+        status="`openstack loadbalancer member show -f value -c provisioning_status test-pool-${test_tag} $member_id`"
+        [ "$status" = ACTIVE ] && break
+        [ "$status" = "ERROR" ] && { _delete_lb $lb_id; exit 1; }
+        echo "Waiting for member $member_vm ($member_id) to be ACTIVE (current=$status)"
+    done
+
+    openstack loadbalancer member list test-pool-${test_tag}
+
+    fip=`openstack floating ip create -f value -c floating_ip_address $ext_net`
+    lb_vip_port_id=$(openstack loadbalancer show -f value -c vip_port_id $lb_id)
+    openstack floating ip set --port $lb_vip_port_id $fip
+    # NOTE: floating ip may not be immediately available
+    retry_count=$MAX_WAIT_FIP
+    rc=-1
+    while ((rc)); do
+        rc=0
+        nc -w 5 -vz $fip 80 || rc=$?
+        if ((rc)); then
+            if ((retry_count)); then
+                ((retry_count--))
+                echo "retrying.."
+                sleep 1
+            else
+                echo "ERROR: max retries reached, could not connect to lb fip"
+                break
+            fi
+        fi
+    done
+fi
+
+_delete_lb $lb_id
+exit $rc
+

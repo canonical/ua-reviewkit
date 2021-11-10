@@ -1,0 +1,7 @@
+[__BLOCKSIZE__]
+ iodepth=__IODEPTH__
+ blocksize=__BLOCKSIZE__
+ size=__SIZE__
+ fdatasync=__FDATASYNC__
+ ioengine=__IOENGINE__
+ direct=__DIRECT__

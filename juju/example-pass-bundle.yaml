@@ -1,0 +1,33 @@
+series: focal
+applications:
+  mysql:
+    charm: cs:~openstack-charmers-next/percona-cluster-365
+    num_units: 3
+    options:
+      max-connections: 2000
+      innodb-buffer-pool-size: 6G
+  nova-compute:
+    charm: cs:~openstack-charmers-next/nova-compute-492
+    num_units: 1
+    options:
+      cpu-model: Skylake-Server-IBRS
+  rabbitmq-server:
+    charm: cs:~openstack-charmers-next/rabbitmq-server-367
+    num_units: 3
+    options:
+      cluster-partition-handling: "ignore"
+  elasticsearch:
+    charm: /home/ubuntu/charms/elasticsearch
+    num_units: 3
+    options:
+      es-heap-size: 6
+  kubernetes:
+    charm: ./charms/kubernetes
+    num_units: 3
+    options:
+      es-heap-size: 6
+  nova-cloud-controller:
+    charm: ~/charms/nova-cloud-controller
+    num_units: 3
+    options:
+      es-heap-size: 6

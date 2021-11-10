@@ -1,0 +1,4 @@
+[global]
+ name=__TESTNAME__
+ readwrite=randrw
+ include common-global.fio

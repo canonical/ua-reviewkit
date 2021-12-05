@@ -1,13 +1,13 @@
 # See README.md and 'ua-bundle-check.py --schema' for usage and schema details
 checks:
-  grafana-k8s:
-    charm: "grafana-k8s"
+  grafana:
+    charm: "grafana"
     assertions:
       ha:
         assert_ha:
           scope: application
-  kafka-k8s:
-    charm: "kafka-k8s"
+  kafka:
+    charm: "kafka"
     assertions:
       ha:
         assert_ha:
@@ -19,62 +19,81 @@ checks:
           scope: config
           source: local
           value: 3
-  lcm-k8s:
-    charm: "lcm-k8s"
+  kafka-exporter:
+    charm: "kafka-exporter"
+    assertions:
+      site_url:
+        isset:
+          scope: config
+  mongo-exporter:
+    charm: "mongodb-exporter"
+    assertions:
+      site_url:
+        isset:
+          scope: config
+      mongodb_uri:
+        isset:
+          scope: config
+  mysql-exporter:
+    charm: "mysqld-exporter"
+    assertions:
+      site_url:
+        isset:
+          scope: config
+      mysql_uri:
+        isset:
+          scope: config
+  lcm:
+    charm: "lcm"
     assertions:
       ha:
         assert_ha:
           scope: application
-  mariadb-k8s:
-    charm: "mariadb-k8s"
+  mon:
+    charm: "mon"
+# cs:~charmed-osm/mon does not currently support HA
+#    assertions:
+#      ha:
+#        assert_ha:
+#          scope: application
+  nbi:
+    charm: "nbi"
     assertions:
       ha:
         assert_ha:
           scope: application
-  mon-k8s:
-    charm: "mon-k8s"
+  pol:
+    charm: "pol"
     assertions:
       ha:
         assert_ha:
           scope: application
-  mongodb-k8s:
-    charm: "mongodb-k8s"
+  prometheus:
+    charm: "prometheus"
     assertions:
       ha:
         assert_ha:
           scope: application
-  nbi-k8s:
-    charm: "nbi-k8s"
+  ro:
+    charm: "ro"
     assertions:
       ha:
         assert_ha:
           scope: application
-  pol-k8s:
-    charm: "pol-k8s"
+  keystone:
+    charm: "keystone"
     assertions:
       ha:
         assert_ha:
           scope: application
-  prometheus-k8s:
-    charm: "prometheus-k8s"
+  ng-ui:
+    charm: "ng-ui"
     assertions:
       ha:
         assert_ha:
           scope: application
-  ro-k8s:
-    charm: "ro-k8s"
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-  ui-k8s:
-    charm: "ui-k8s"
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-  zookeeper-k8s:
-    charm: "zookeeper-k8s"
+  zookeeper:
+    charm: "zookeeper"
     assertions:
       ha:
         assert_ha:

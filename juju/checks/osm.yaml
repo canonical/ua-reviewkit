@@ -70,10 +70,11 @@ checks:
           scope: application
   prometheus:
     charm: "prometheus"
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
+# HA not supported yet
+#    assertions:
+#      ha:
+#        assert_ha:
+#          scope: application
   ro:
     charm: "ro"
     assertions:
@@ -82,10 +83,11 @@ checks:
           scope: application
   keystone:
     charm: "keystone"
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
+# HA not supported yet
+#    assertions:
+#      ha:
+#        assert_ha:
+#          scope: application
   ng-ui:
     charm: "ng-ui"
     assertions:

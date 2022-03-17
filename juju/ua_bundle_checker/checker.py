@@ -640,7 +640,24 @@ if __name__ == "__main__":
                                       bundle, bundle_sha.hexdigest(),
                                       checks_sha.hexdigest()), stdout=True)
 
-    bundle_apps = yaml.safe_load(open(bundle).read())['applications']
+    try:
+        bundle_blob = open(bundle).read()
+    except Exception as e:
+        logger.log("ERROR: Error opening/reading bundle file: {}".format(e))
+        sys.exit(1)
+
+    try:
+        bundle_yaml = yaml.safe_load(bundle_blob)
+    except Exception as e:
+        logger.log("ERROR: Error parsing the bundle file: {}".format(e))
+        logger.log("Please check the above errors and run again.")
+        sys.exit(1)
+
+    try:
+        bundle_apps = bundle_yaml['applications']
+    except KeyError:
+        bundle_apps = bundle_yaml['services']
+
     check_defs = yaml.safe_load(open(checks_path).read())
     checks_run = []
 

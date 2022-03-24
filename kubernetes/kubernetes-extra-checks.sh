@@ -24,7 +24,7 @@ function  run_sonobuoy() {
     fetch_sonobuoy
   fi
 
-  ./sonobuoy run --kube-conformance-image=${SONOBUOY_CONFORMANCE_IMAGE} --mode=${SONOBUOY_MODE} --skip-preflight --plugin e2e --e2e-parallel ${SONOBUOY_PARALLEL} --sonobuoy-image projects.registry.vmware.com/sonobuoy/sonobuoy:v${SONOBUOY_VERSION} --wait 2>&1
+  ./sonobuoy run --kube-conformance-image=${SONOBUOY_CONFORMANCE_IMAGE} --mode=${SONOBUOY_MODE} --skip-preflight --plugin e2e --e2e-parallel ${SONOBUOY_PARALLEL} --sonobuoy-image sonobuoy/sonobuoy:v${SONOBUOY_VERSION} --wait 2>&1
   ./sonobuoy results $(./sonobuoy retrieve) -m dump | ./parse_results.py failed
 }
 

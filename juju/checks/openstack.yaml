@@ -11,6 +11,7 @@ checks:
           scope: config
           source: local
           value: 6G
+          warn-on-fail: true
           description: |
             DB must be allowed to cache as useful amount of data corresponding
             to the amount of memory available to the unit.
@@ -33,6 +34,7 @@ checks:
           scope: config
           source: local
           value: 6G
+          warn-on-fail: true
           description: |
             DB must be allowed to cache as useful amount of data corresponding
             to the amount of memory available to the unit.

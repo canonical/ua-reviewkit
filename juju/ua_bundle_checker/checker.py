@@ -39,8 +39,9 @@ UA Juju bundle config verification
 """
 HEADER_TEMPLATE += "=" * 80
 # e.g. cs:barbican-vault-123 or ./barbican-vault
-CHARM_REGEX_TEMPLATE = (r'^cs:(~.+/)?{}[-]?[0-9]*$|'
-                        r'^[\/\.]*{}$|^(\.?|~)(/[^/ ]*)+/?{}$')
+CHARM_REGEX_TEMPLATE = (r'^(cs|ch|local):(~?.+/)?{}[-]?[0-9]*$|'
+                        r'^[\/\.]*{}[-]?[0-9]*$|'
+                        r'^(\.?|~)(/[^/ ]*)+/?{}[-]?[0-9]*$')
 
 
 class Logger(object):

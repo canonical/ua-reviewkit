@@ -21,7 +21,7 @@ checks:
           value: 2000
           description: |
             Openstack services will allow pool a set of open connections so
-            this value must be high enough to accomodate your deployment.
+            this value must be high enough to accommodate your deployment.
   mysql-innodb-cluster:
     charm: "mysql-innodb-cluster"
     assertions:
@@ -43,7 +43,7 @@ checks:
           value: 2000
           description: |
             Openstack services will allow pool a set of open connections so
-            this value must be high enough to accomodate your deployment.
+            this value must be high enough to accommodate your deployment.
   rabbitmq-server:
     charm: "rabbitmq-server"
     assertions:

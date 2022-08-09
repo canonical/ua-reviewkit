@@ -49,3 +49,31 @@ checks:
       ha:
         assert_ha:
           scope: application
+  mysql-percona:
+    charm: "percona-cluster"
+    assertions:
+      ha:
+        assert_ha:
+          scope: application
+      max-connections:
+        gte:
+          scope: config
+          source: local
+          value: 1000
+          description: |
+            Openstack services will allow pool a set of open connections so
+            this value must be high enough to accommodate your deployment.
+  mysql-innodb-cluster:
+    charm: "mysql-innodb-cluster"
+    assertions:
+      ha:
+        assert_ha:
+          scope: application
+      max-connections:
+        gte:
+          scope: config
+          source: local
+          value: 1000
+          description: |
+            Openstack services will allow pool a set of open connections so
+            this value must be high enough to accommodate your deployment.

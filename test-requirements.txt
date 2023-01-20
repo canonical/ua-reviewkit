@@ -1,5 +1,5 @@
 flake8
 mock
-nose
+stestr
 pylint==2.8.3
 testtools

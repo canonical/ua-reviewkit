@@ -1,5 +1,18 @@
 # See README.md and 'ua-bundle-check.py --schema' for usage and schema details
 checks:
+  kubernetes-control-plane:
+    charm: "kubernetes-control-plane"
+    assertions:
+      ha:
+        assert_ha:
+          scope: application
+      authorization-mode:
+        allow_default:
+          scope: config
+        eq:
+          scope: config
+          source: local
+          value: "RBAC,Node"
   kubernetes-master:
     charm: "kubernetes-master"
     assertions:

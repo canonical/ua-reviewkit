@@ -39,8 +39,11 @@ UA Juju bundle config verification
 """
 HEADER_TEMPLATE += "=" * 80
 # e.g. cs:barbican-vault-123 or ./barbican-vault
-CHARM_REGEX_TEMPLATE = (r'^cs:(~.+/)?{}[-]?[0-9]*$|'
+CHARM_REGEX_TEMPLATE = (r'^ch:{}[-]?[0-9]*$|'
                         r'^[\/\.]*{}$|^(\.?|~)(/[^/ ]*)+/?{}$')
+OST_CHARM_CHANNELS_GUIDE_URL = (
+    "https://docs.openstack.org/charm-guide/latest/project/charm-delivery.html"
+)
 
 
 class Logger(object):
@@ -68,9 +71,11 @@ class CheckResult(object):
     PASS = 0
     WARN = 1
     FAIL = 2
+    SKIPPED = 3
     RC_MAP = {PASS: 'PASS',
               WARN: 'WARN',
-              FAIL: 'FAIL'}
+              FAIL: 'FAIL',
+              SKIPPED: 'SKIPPED'}
 
     def __init__(self, rc=PASS, opt=None, reason=None):
         self.rc = rc
@@ -95,6 +100,10 @@ class CheckResult(object):
         return self.rc == self.PASS
 
     @property
+    def skipped(self):
+        return self.rc == self.SKIPPED
+
+    @property
     def rc_str(self):
         return self.RC_MAP[self.rc]
 
@@ -102,6 +111,7 @@ class CheckResult(object):
     def rc_str_fmt(self):
         map = {self.PASS: self._grn('PASS'),
                self.WARN: self._ylw('WARN'),
+               self.SKIPPED: self._ylw('SKIPPED'),
                self.FAIL: self._red('FAIL')}
         return map[self.rc]
 
@@ -173,6 +183,11 @@ class LocalAssertionHelpers(AssertionBase):
                         'source': 'bundle',
                         'value': None,
                         'override_method': True},
+                       self.assert_channel.__name__:
+                       {'description':
+                        '"Ensure application using valid charmhub channel"',
+                        'scope': 'application',
+                        'source': 'bundle'},
                        self.assert_ha.__name__:
                        {'description':
                         '"Ensure application has minimum number of units"',
@@ -225,7 +240,8 @@ class LocalAssertionHelpers(AssertionBase):
                 'source': "[local|bundle|master]",
                 'value': "<value>  # if 'source: master' this must "
                          "be regex with single substring match",
-                'warn-on-fail': 'bool'}
+                'warn-on-fail': 'bool',
+                'skip': 'bool'}
 
     def assert_ha(self, application, warn_on_fail=False):
         min = 3
@@ -234,6 +250,27 @@ class LocalAssertionHelpers(AssertionBase):
         if num_units < min:
             ret.reason = ("not enough units (value={}, expected='>={}')".
                           format(num_units, min))
+            if warn_on_fail:
+                ret.rc = CheckResult.WARN
+            else:
+                ret.rc = CheckResult.FAIL
+
+        return ret
+
+    def assert_channel(self, application, warn_on_fail=False):
+        channel = application.get('channel')
+        ret = CheckResult(opt="charmhub channel ({})".format(channel))
+        if not channel:
+            ret.reason = ("channel is unset - see {}".
+                          format(OST_CHARM_CHANNELS_GUIDE_URL))
+            if warn_on_fail:
+                ret.rc = CheckResult.WARN
+            else:
+                ret.rc = CheckResult.FAIL
+        elif channel == 'latest/stable':
+            ret.reason = ("channel is set to latest/stable which is "
+                          "not supported - see {}".
+                          format(OST_CHARM_CHANNELS_GUIDE_URL))
             if warn_on_fail:
                 ret.rc = CheckResult.WARN
             else:
@@ -499,6 +536,10 @@ class UABundleChecker(object):
         application = self.bundle_apps[self.app_name]
         warn_on_fail = assertion.get('warn-on-fail', False)
 
+        skip = assertion.get('skip', False)
+        if skip:
+            return CheckResult().SKIPPED
+
         assertion_scope = assertion.get('scope', 'config')
         if assertion_scope == "application":
             result = getattr(self.local_assertion_helpers,
@@ -668,6 +709,11 @@ if __name__ == "__main__":
             if not args.errors_only:
                 logger.log("INFO: {} has no assertions defined".format(label))
             continue
+
+        # Always add channel check if not explicitly set in checks.
+        if 'channel' not in assertions:
+            assertions['channel'] = {'assert_channel': {
+                                        'scope': 'application'}}
 
         checker = UABundleChecker(bundle_apps, charm, assertions,
                                   args.fce_config, logger)

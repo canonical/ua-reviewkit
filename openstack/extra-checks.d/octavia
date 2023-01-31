@@ -51,7 +51,7 @@ member_vm=
 test_tag=`uuidgen`
 lb_name=test-lb-${test_tag}
 
-exists="`juju status --format=json| jq '.applications| to_entries[]| select(.value.charm| test(\".+octavia.+\"))'`"
+exists="`juju status --format=json| jq '.applications| to_entries[]| select(.value.charm| test(\"octavia\"))'`"
 if [ -z "$exists" ]; then
     echo "INFO: no octavia found - skipping test"
     exit 0

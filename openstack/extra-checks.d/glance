@@ -24,7 +24,7 @@
 rc=0
 ftmp=`mktemp`
 
-exists="`juju status --format=json| jq '.applications| to_entries[]| select(.value.charm| test(\".+ceph-mon.+\"))'`"
+exists="`juju status --format=json| jq '.applications| to_entries[]| select(.value.charm| test(\"ceph-mon\"))'`"
 if [ -z "$exists" ]; then
     echo "INFO: no ceph-mon found - skipping test"
     rm $ftmp

@@ -62,6 +62,17 @@ checks:
       ha:
         assert_ha:
           scope: application
+      channel:
+        neq:
+          scope: config
+          source: local
+          value: stable
+          description: >-
+            The vault snap channel must not be set to "stable" as this
+            will result in whatever version of vault is available in
+            that channel being installed which will change over time
+            and may not be supported by the charm. Typically this
+            should be matched to the charm channel itself e.g. 1.7/stable.
   mysql-percona:
     charm: percona-cluster
     assertions:

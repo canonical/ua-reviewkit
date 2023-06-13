@@ -30,4 +30,4 @@ class TestJujuBundleChecker(unittest.TestCase):
         app = {'scale': 3}
         self.assertEquals(AssertionBase().get_units(app), 3)
         app = {}
-        self.assertEquals(AssertionBase().get_units(app), None)
+        self.assertEquals(AssertionBase().get_units(app), 1)

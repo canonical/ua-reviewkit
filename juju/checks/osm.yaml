@@ -1,13 +1,13 @@
 # See README.md and 'ua-bundle-check.py --schema' for usage and schema details
 checks:
   grafana:
-    charm: "grafana"
+    charm: grafana
     assertions:
       ha:
         assert_ha:
           scope: application
   kafka:
-    charm: "kafka"
+    charm: kafka
     assertions:
       ha:
         assert_ha:
@@ -20,13 +20,13 @@ checks:
           source: local
           value: 3
   kafka-exporter:
-    charm: "kafka-exporter"
+    charm: kafka-exporter
     assertions:
       site_url:
         isset:
           scope: config
   mongo-exporter:
-    charm: "mongodb-exporter"
+    charm: mongodb-exporter
     assertions:
       site_url:
         isset:
@@ -35,7 +35,7 @@ checks:
         isset:
           scope: config
   mysql-exporter:
-    charm: "mysqld-exporter"
+    charm: mysqld-exporter
     assertions:
       site_url:
         isset:
@@ -44,58 +44,58 @@ checks:
         isset:
           scope: config
   lcm:
-    charm: "lcm"
+    charm: lcm
     assertions:
       ha:
         assert_ha:
           scope: application
   mon:
-    charm: "mon"
+    charm: mon
 # cs:~charmed-osm/mon does not currently support HA
 #    assertions:
 #      ha:
 #        assert_ha:
 #          scope: application
   nbi:
-    charm: "nbi"
+    charm: nbi
     assertions:
       ha:
         assert_ha:
           scope: application
   pol:
-    charm: "pol"
+    charm: pol
     assertions:
       ha:
         assert_ha:
           scope: application
   prometheus:
-    charm: "prometheus"
+    charm: prometheus
 # HA not supported yet
 #    assertions:
 #      ha:
 #        assert_ha:
 #          scope: application
   ro:
-    charm: "ro"
+    charm: ro
     assertions:
       ha:
         assert_ha:
           scope: application
   keystone:
-    charm: "keystone"
+    charm: keystone
 # HA not supported yet
 #    assertions:
 #      ha:
 #        assert_ha:
 #          scope: application
   ng-ui:
-    charm: "ng-ui"
+    charm: ng-ui
     assertions:
       ha:
         assert_ha:
           scope: application
   zookeeper:
-    charm: "zookeeper"
+    charm: zookeeper
     assertions:
       ha:
         assert_ha:

@@ -162,7 +162,7 @@ class AssertionBase(object):
         if 'num_units' in application:
             return application['num_units']
 
-        return application.get('scale')
+        return application.get('scale', 1)
 
 
 class LocalAssertionHelpers(AssertionBase):
@@ -210,16 +210,21 @@ class LocalAssertionHelpers(AssertionBase):
                         'value': None}}
 
     def allow_default(self, application, opt,
-                      value, warn_on_fail=False):  # pylint: disable=W0613
+                      value, warn_on_fail=False,  # pylint: disable=W0613
+                      description=None):
         ret = CheckResult(opt=opt)
         if opt not in application.get('options', []):
             ret.reason = "using charm config default"
+            if description:
+                ret.reason = "{}: {}".format(ret.reason, description)
+
             return ret
 
         ret.rc = CheckResult.FAIL
         return ret
 
-    def skip_if_charm_exists(self, application, opt, value, warn_on_fail=False):  # noqa pylint: disable=W0613
+    def skip_if_charm_exists(self, application, opt, value, warn_on_fail=False,  # noqa pylint: disable=W0613
+                             description=None):
         ret = CheckResult()
         regex_str = value
         for app in self.bundle_apps:
@@ -229,6 +234,9 @@ class LocalAssertionHelpers(AssertionBase):
             if r:
                 ret.reason = ("charm {} found in bundle - skipping check".
                               format(charm))
+                if description:
+                    ret.reason = "{}: {}".format(ret.reason, description)
+
                 return ret
 
         ret.rc = CheckResult.FAIL
@@ -243,13 +251,16 @@ class LocalAssertionHelpers(AssertionBase):
                 'warn-on-fail': 'bool',
                 'skip': 'bool'}
 
-    def assert_ha(self, application, warn_on_fail=False):
+    def assert_ha(self, application, warn_on_fail=False, description=None):
         min = 3
         num_units = self.get_units(application)
         ret = CheckResult(opt="HA (>={})".format(min))
         if num_units < min:
             ret.reason = ("not enough units (value={}, expected='>={}')".
                           format(num_units, min))
+            if description:
+                ret.reason = "{}: {}".format(ret.reason, description)
+
             if warn_on_fail:
                 ret.rc = CheckResult.WARN
             else:
@@ -257,12 +268,16 @@ class LocalAssertionHelpers(AssertionBase):
 
         return ret
 
-    def assert_channel(self, application, warn_on_fail=False):
+    def assert_channel(self, application, warn_on_fail=False,
+                       description=None):
         channel = application.get('channel')
         ret = CheckResult(opt="charmhub channel ({})".format(channel))
         if not channel:
             ret.reason = ("channel is unset - see {}".
                           format(OST_CHARM_CHANNELS_GUIDE_URL))
+            if description:
+                ret.reason = "{}: {}".format(ret.reason, description)
+
             if warn_on_fail:
                 ret.rc = CheckResult.WARN
             else:
@@ -271,6 +286,9 @@ class LocalAssertionHelpers(AssertionBase):
             ret.reason = ("channel is set to latest/stable which is "
                           "not supported - see {}".
                           format(OST_CHARM_CHANNELS_GUIDE_URL))
+            if description:
+                ret.reason = "{}: {}".format(ret.reason, description)
+
             if warn_on_fail:
                 ret.rc = CheckResult.WARN
             else:
@@ -278,13 +296,17 @@ class LocalAssertionHelpers(AssertionBase):
 
         return ret
 
-    def gte(self, application, opt, value, warn_on_fail=False):
+    def gte(self, application, opt, value, warn_on_fail=False,
+            description=None):
         current = application.get('options', [])[opt]
         current = self.atoi(current)
         expected = self.atoi(value)
         ret = CheckResult(opt=opt, reason=("value={}".format(current)))
         if current < expected:
             ret.reason = "value={}, expected={}".format(current, expected)
+            if description:
+                ret.reason = "{}: {}".format(ret.reason, description)
+
             if warn_on_fail:
                 ret.rc = CheckResult.WARN
             else:
@@ -292,13 +314,17 @@ class LocalAssertionHelpers(AssertionBase):
 
         return ret
 
-    def neq(self, application, opt, value, warn_on_fail=False):
+    def neq(self, application, opt, value, warn_on_fail=False,
+            description=None):
         current = application.get('options', [])[opt]
         current = self.atoi(current)
         expected = self.atoi(value)
         ret = CheckResult(opt=opt, reason=("value={}".format(current)))
         if current == expected:
-            ret.reason = "value={}, expected={}".format(current, expected)
+            ret.reason = "value '{}' is not valid".format(current)
+            if description:
+                ret.reason = "{}: {}".format(ret.reason, description)
+
             if warn_on_fail:
                 ret.rc = CheckResult.WARN
             else:
@@ -306,13 +332,17 @@ class LocalAssertionHelpers(AssertionBase):
 
         return ret
 
-    def eq(self, application, opt, value, warn_on_fail=False):
+    def eq(self, application, opt, value, warn_on_fail=False,
+           description=None):
         current = application.get('options', [])[opt]
         current = self.atoi(current)
         expected = self.atoi(value)
         ret = CheckResult(opt=opt, reason=("value={}".format(current)))
         if current != expected:
             ret.reason = "value={}, expected={}".format(current, expected)
+            if description:
+                ret.reason = "{}: {}".format(ret.reason, description)
+
             if warn_on_fail:
                 ret.rc = CheckResult.WARN
             else:
@@ -320,12 +350,15 @@ class LocalAssertionHelpers(AssertionBase):
 
         return ret
 
-    def isset(self, app, opt,
-              value, warn_on_fail=False):  # pylint: disable=W0613
+    def isset(self, app, opt, value, warn_on_fail=False,  # noqa pylint: disable=W0613
+              description=None):
         current = app.get('options', [])[opt]
         ret = CheckResult(opt=opt, reason="value={}".format(current))
         if not current:
             ret.reason = "no value set"
+            if description:
+                ret.reason = "{}: {}".format(ret.reason, description)
+
             if warn_on_fail:
                 ret.rc = CheckResult.WARN
             else:
@@ -344,7 +377,8 @@ class LocalAssertionHelpers(AssertionBase):
 
         return devs
 
-    def exclusive_backing_dev(self, app, opt, value, warn_on_fail=False):
+    def exclusive_backing_dev(self, app, opt, value, warn_on_fail=False,
+                              description=None):
         current = app.get('options', [])[opt]
         ret = CheckResult(opt=opt, reason="value={}".format(current))
 
@@ -368,6 +402,9 @@ class LocalAssertionHelpers(AssertionBase):
                 if len(devs) > 1:
                     ret.reason = ("bcaches sharing same backing disk: {}"
                                   .format(devs))
+                    if description:
+                        ret.reason = "{}: {}".format(ret.reason, description)
+
                     if warn_on_fail:
                         ret.rc = CheckResult.WARN
                     else:
@@ -524,14 +561,16 @@ class UABundleChecker(object):
                     if method in overrides.get(opt, {}):
                         continue
 
-                    if not self.run(opt, method):
+                    desc = self.assertions[opt][method].get('description')
+                    if not self.run(opt, method, description=desc):
                         # stop at the first failure
                         break
 
     def opt_exists(self, opt):
         return opt in self.bundle_apps[self.app_name].get('options', [])
 
-    def run(self, opt, method, allow_missing=False, ignore_fails=False):
+    def run(self, opt, method, description=None, allow_missing=False,
+            ignore_fails=False):
         assertion = self.assertions[opt][method]
         application = self.bundle_apps[self.app_name]
         warn_on_fail = assertion.get('warn-on-fail', False)
@@ -588,6 +627,7 @@ class UABundleChecker(object):
 
         result = getattr(self.local_assertion_helpers,
                          method)(application, opt, value,
+                                 description=description,
                                  warn_on_fail=warn_on_fail)
 
         if result.passed or not ignore_fails:

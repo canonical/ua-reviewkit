@@ -1,7 +1,7 @@
 # See README.md and 'ua-bundle-check.py --schema' for usage and schema details
 checks:
   kubernetes-control-plane:
-    charm: "kubernetes-control-plane"
+    charm: kubernetes-control-plane
     assertions:
       ha:
         assert_ha:
@@ -14,7 +14,7 @@ checks:
           source: local
           value: "RBAC,Node"
   kubernetes-master:
-    charm: "kubernetes-master"
+    charm: kubernetes-master
     assertions:
       ha:
         assert_ha:
@@ -27,13 +27,13 @@ checks:
           source: local
           value: "RBAC,Node"
   kubeapi-load-balancer:
-    charm: "kubeapi-load-balancer"
+    charm: kubeapi-load-balancer
     assertions:
       ha:
         assert_ha:
           scope: application
   hacluster:
-    charm: "hacluster"
+    charm: hacluster
     assertions:
       cluster_count:
         allow_default:
@@ -43,13 +43,13 @@ checks:
           source: local
           value: 3
   etcd:
-    charm: "etcd"
+    charm: etcd
     assertions:
       ha:
         assert_ha:
           scope: application
   canal:
-    charm: "canal"
+    charm: canal
     assertions:
       cidr:
         isset:
@@ -57,13 +57,13 @@ checks:
           source: bundle
           value: ""
   vault:
-    charm: "vault"
+    charm: vault
     assertions:
       ha:
         assert_ha:
           scope: application
   mysql-percona:
-    charm: "percona-cluster"
+    charm: percona-cluster
     assertions:
       ha:
         assert_ha:
@@ -73,11 +73,11 @@ checks:
           scope: config
           source: local
           value: 1000
-          description: |
-            Openstack services will allow pool a set of open connections so
+          description: >-
+            Openstack services will pool open connections so
             this value must be high enough to accommodate your deployment.
   mysql-innodb-cluster:
-    charm: "mysql-innodb-cluster"
+    charm: mysql-innodb-cluster
     assertions:
       ha:
         assert_ha:
@@ -87,6 +87,6 @@ checks:
           scope: config
           source: local
           value: 1000
-          description: |
-            Openstack services will allow pool a set of open connections so
+          description: >-
+            Openstack services will pool open connections so
             this value must be high enough to accommodate your deployment.

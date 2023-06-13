@@ -1,7 +1,7 @@
 # See README.md and 'ua-bundle-check.py --schema' for usage and schema details
 checks:
   mysql-percona:
-    charm: "percona-cluster"
+    charm: percona-cluster
     assertions:
       ha:
         assert_ha:
@@ -11,19 +11,19 @@ checks:
           scope: config
           source: local
           value: 6G
-          description: |
-            DB must be allowed to cache as useful amount of data corresponding
+          description: >-
+            mysql must be allowed to cache a useful amount of data corresponding
             to the amount of memory available to the unit.
       max-connections:
         gte:
           scope: config
           source: local
           value: 2000
-          description: |
-            Openstack services will allow pool a set of open connections so
-            this value must be high enough to accommodate your deployment.
+          description: >-
+            Openstack services will pool open connections so this value must
+            be high enough to accommodate your deployment.
   mysql-innodb-cluster:
-    charm: "mysql-innodb-cluster"
+    charm: mysql-innodb-cluster
     assertions:
       ha:
         assert_ha:
@@ -33,19 +33,19 @@ checks:
           scope: config
           source: local
           value: 6G
-          description: |
-            DB must be allowed to cache as useful amount of data corresponding
+          description: >-
+            mysql must be allowed to cache a useful amount of data corresponding
             to the amount of memory available to the unit.
       max-connections:
         gte:
           scope: config
           source: local
           value: 2000
-          description: |
-            Openstack services will allow pool a set of open connections so
-            this value must be high enough to accommodate your deployment.
+          description: >-
+            Openstack services will pool open connections so this value must
+            be high enough to accommodate your deployment.
   rabbitmq-server:
-    charm: "rabbitmq-server"
+    charm: rabbitmq-server
     assertions:
       ha:
         assert_ha:
@@ -55,30 +55,28 @@ checks:
           scope: config
           source: local
           value: "pause_minority"
-          description: |
-            Due to the potential for adverse affects resulting from the use of
-            "autoheal", we recommend not using it and ideally using
-            "pause-minority".
+          description: >-
+            We recommend using "pause-minority".
   etcd:
-    charm: "etcd"
+    charm: etcd
     assertions:
       ha:
         assert_ha:
           scope: application
   barbican:
-    charm: "barbican"
+    charm: barbican
     assertions:
       ha:
         assert_ha:
           scope: application
   ceph-mon:
-    charm: "ceph-mon"
+    charm: ceph-mon
     assertions:
       ha:
         assert_ha:
           scope: application
   ceph-osd:
-    charm: "ceph-osd"
+    charm: ceph-osd
     assertions:
       bluestore-block-wal-size:
         allow_default:
@@ -88,10 +86,10 @@ checks:
           source: local
           value: 1G
   ceph-proxy:
-    charm: "ceph-proxy"
+    charm: ceph-proxy
     assertions:
   ceph-radosgw:
-    charm: "ceph-radosgw"
+    charm: ceph-radosgw
     assertions:
       ceph-osd-replication-count:
         allow_default:
@@ -101,13 +99,13 @@ checks:
           source: local
           value: 3
   cinder:
-    charm: "cinder"
+    charm: cinder
     assertions:
       ha:
         assert_ha:
           scope: application
   cinder-ceph:
-    charm: "cinder-ceph"
+    charm: cinder-ceph
     assertions:
       ceph-osd-replication-count:
         allow_default:
@@ -117,13 +115,13 @@ checks:
           source: local
           value: 3
   designate:
-    charm: "designate"
+    charm: designate
     assertions:
       ha:
         assert_ha:
           scope: application
   glance:
-    charm: "glance"
+    charm: glance
     assertions:
       ha:
         assert_ha:
@@ -136,31 +134,31 @@ checks:
           source: local
           value: 3
   gnocchi:
-    charm: "gnocchi"
+    charm: gnocchi
     assertions:
       ha:
         assert_ha:
           scope: application
   heat:
-    charm: "heat"
+    charm: heat
     assertions:
       ha:
         assert_ha:
           scope: application
   keystone:
-    charm: "keystone"
+    charm: keystone
     assertions:
       ha:
         assert_ha:
           scope: application
   manila:
-    charm: "manila"
+    charm: manila
     assertions:
       ha:
         assert_ha:
           scope: application
   neutron-api:
-    charm: "neutron-api"
+    charm: neutron-api
     assertions:
       ha:
         assert_ha:
@@ -171,25 +169,25 @@ checks:
           source: local
           value: 9000
           warn-on-fail: true
-          description: |
+          description: >-
             While not a hard requirment, we currently recommend using Jumbo
             frames for this setting so as to allow enough flexibility for
             all neutron networks.
   neutron-gateway:
-    charm: "neutron-gateway"
+    charm: neutron-gateway
     assertions:
       ha:
         assert_ha:
           scope: application
           warn-on-fail: true
   nova-cloud-controller:
-    charm: "nova-cloud-controller"
+    charm: nova-cloud-controller
     assertions:
       ha:
         assert_ha:
           scope: application
   nova-compute:
-    charm: "nova-compute"
+    charm: nova-compute
     assertions:
       vcpu-pin-set:
         allow_default:
@@ -206,9 +204,9 @@ checks:
           scope: config
           source: bundle
           warn-on-fail: true
-          description: |
+          description: >-
             This should be set to the highest available cpu model across all
-            nodes to avoid problems cpu feature incompatibility when
+            nodes to avoid problems with cpu feature incompatibility when
             performing live-migrations.
       ephemeral-device:
         allow_default:
@@ -217,7 +215,7 @@ checks:
         exclusive_backing_dev:
           scope: config
           source: bucketsconfig
-          description: |
+          description: >-
             Ensure that nova instances path (if using bcache) is not backed by
             the same physical disk used for the rootfs.
       ceph-osd-replication-count:
@@ -228,25 +226,25 @@ checks:
           source: local
           value: 3
   octavia:
-    charm: "octavia"
+    charm: octavia
     assertions:
       ha:
         assert_ha:
           scope: application
   placement:
-    charm: "placement"
+    charm: placement
     assertions:
       ha:
         assert_ha:
           scope: application    
   swift-proxy:
-    charm: "swift-proxy"
+    charm: swift-proxy
     assertions:
       ha:
         assert_ha:
           scope: application
   sysconfig:
-    charm: "sysconfig"
+    charm: sysconfig
     assertions:
       governor:
         eq:
@@ -254,13 +252,13 @@ checks:
           source: local
           value: "performance"
   vault:
-    charm: "vault"
+    charm: vault
     assertions:
       ha:
         assert_ha:
           scope: application
   hacluster:
-    charm: "hacluster"
+    charm: hacluster
     assertions:
       cluster_count:
         allow_default:
@@ -270,11 +268,11 @@ checks:
           source: local
           value: 3
   ovn-chassis:
-    charm: "ovn-chassis"
+    charm: ovn-chassis
   ovn-central:
-    charm: "ovn-central"
+    charm: ovn-central
   neutron-api-plugin-ovn:
-    charm: "neutron-api-plugin-ovn"
+    charm: neutron-api-plugin-ovn
     assertions:
       dns-servers:
         isset:

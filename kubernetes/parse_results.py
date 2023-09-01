@@ -9,15 +9,17 @@ import yaml
 
 
 def __filter_tests(status="skipped"):
-  return filter(lambda x: x['status'] == status, [
-      x for x in yaml.safe_load(sys.stdin.read())['items'][0]['items'][0]['items']])
+    _all = yaml.safe_load(sys.stdin.read())
+    tests = list(_all['items'][0]['items'][0]['items'])
+    return filter(lambda x: x['status'] == status, tests)
 
 
 def main():
-    if not len(sys.argv) > 1:
+    if len(sys.argv) <= 1:
         print(__doc__.format(sys.argv[0]))
         sys.exit(-1)
-    status=sys.argv[1]
+
+    status = sys.argv[1]
     print("List of tests with {} status:".format(status))
     for test in __filter_tests(status=status):
         print(test['name'])

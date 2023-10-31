@@ -175,7 +175,8 @@ disable=
  consider-using-in,
  useless-return,
  chained-comparison,
- use-a-generator
+ use-a-generator,
+ global-statement
 
 [REPORTS]
 # Tells whether to display a full report or only the messages.

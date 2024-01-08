@@ -44,6 +44,12 @@ checks:
           description: >-
             Openstack services will pool open connections so this value must
             be high enough to accommodate your deployment.
+  mysql-router:
+    charm: mysql-router
+    assertions:
+      channel:
+        assert_channel:
+          scope: application
   rabbitmq-server:
     charm: rabbitmq-server
     assertions:

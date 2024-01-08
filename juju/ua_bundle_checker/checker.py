@@ -110,15 +110,15 @@ class CheckResult(object):
 
     @property
     def rc_str_fmt(self):
-        map = {self.PASS: self._grn('PASS'),
+        _map = {self.PASS: self._grn('PASS'),
                self.WARN: self._ylw('WARN'),
                self.SKIPPED: self._ylw('SKIPPED'),
                self.FAIL: self._red('FAIL')}
-        return map[self.rc]
+        return _map[self.rc]
 
     def unformatted(self):
         self.formatted = False
-        return self.__str__()
+        return str(self)
 
     def __str__(self):
         if self.formatted:
@@ -137,10 +137,10 @@ class CheckResult(object):
 class AssertionBase(object):
     @staticmethod
     def atoi(val):
-        if type(val) != str:
+        if not isinstance(val, str):
             return val
 
-        if type(val[-1]) != str:
+        if not isinstance(val[-1], str):
             return val
 
         try:
@@ -252,12 +252,12 @@ class LocalAssertionHelpers(AssertionBase):
                 'skip': 'bool'}
 
     def assert_ha(self, application, warn_on_fail=False, description=None):
-        min = 3
+        _min = 3
         num_units = self.get_units(application)
-        ret = CheckResult(opt="HA (>={})".format(min))
-        if num_units < min:
+        ret = CheckResult(opt="HA (>={})".format(_min))
+        if num_units < _min:
             ret.reason = ("not enough units (value={}, expected='>={}')".
-                          format(num_units, min))
+                          format(num_units, _min))
             if description:
                 ret.reason = "{}: {}".format(ret.reason, description)
 
@@ -271,6 +271,7 @@ class LocalAssertionHelpers(AssertionBase):
     def assert_channel(self, application, warn_on_fail=False,
                        description=None):
         channel = application.get('channel')
+        _ret = re.match(r'.*latest/\S+', channel)
         ret = CheckResult(opt="charmhub channel ({})".format(channel))
         if not channel:
             ret.reason = ("channel is unset - see {}".
@@ -282,10 +283,10 @@ class LocalAssertionHelpers(AssertionBase):
                 ret.rc = CheckResult.WARN
             else:
                 ret.rc = CheckResult.FAIL
-        elif channel == 'latest/stable':
-            ret.reason = ("channel is set to latest/stable which is "
+        elif _ret:
+            ret.reason = ("channel is set to {} which is "
                           "not supported - see {}".
-                          format(OST_CHARM_CHANNELS_GUIDE_URL))
+                          format(_ret.group(0), OST_CHARM_CHANNELS_GUIDE_URL))
             if description:
                 ret.reason = "{}: {}".format(ret.reason, description)
 
@@ -301,7 +302,7 @@ class LocalAssertionHelpers(AssertionBase):
         current = application.get('options', [])[opt]
         current = self.atoi(current)
         expected = self.atoi(value)
-        ret = CheckResult(opt=opt, reason=("value={}".format(current)))
+        ret = CheckResult(opt=opt, reason="value={}".format(current))
         if current < expected:
             ret.reason = "value={}, expected={}".format(current, expected)
             if description:
@@ -319,7 +320,7 @@ class LocalAssertionHelpers(AssertionBase):
         current = application.get('options', [])[opt]
         current = self.atoi(current)
         expected = self.atoi(value)
-        ret = CheckResult(opt=opt, reason=("value={}".format(current)))
+        ret = CheckResult(opt=opt, reason="value={}".format(current))
         if current == expected:
             ret.reason = "value '{}' is not valid".format(current)
             if description:
@@ -337,7 +338,7 @@ class LocalAssertionHelpers(AssertionBase):
         current = application.get('options', [])[opt]
         current = self.atoi(current)
         expected = self.atoi(value)
-        ret = CheckResult(opt=opt, reason=("value={}".format(current)))
+        ret = CheckResult(opt=opt, reason="value={}".format(current))
         if current != expected:
             ret.reason = "value={}, expected={}".format(current, expected)
             if description:
@@ -428,31 +429,7 @@ class MasterAssertionHelpers(LocalAssertionHelpers):
         # disabling this and will consider either removing altogether or
         # finding a way to make it meaningfil.
         ret = CheckResult(CheckResult.WARN, opt=opt)
-        ret.reason = ("check disabled - please check this one manually")
-        """
-        master_value = None
-
-        with open(self.master_path) as fd:
-            for line in fd.readlines():
-                r = re.compile(value).match(line)
-                if r:
-                    master_value = r[1]
-                    break
-
-        if master_value:
-            return super(MasterAssertionHelpers, self).eq(
-                         application, opt, master_value, warn_on_fail)
-        else:
-            ret = CheckResult(opt=opt)
-            ret.reason = ("no match found in {} with: {}".
-                          format(self.master_path, value))
-            if warn_on_fail:
-                ret.rc = CheckResult.WARN
-            else:
-                ret.rc = CheckResult.FAIL
-
-            return ret
-        """
+        ret.reason = "check disabled - please check this one manually"
 
 
 class UABundleChecker(object):
@@ -569,7 +546,7 @@ class UABundleChecker(object):
     def opt_exists(self, opt):
         return opt in self.bundle_apps[self.app_name].get('options', [])
 
-    def run(self, opt, method, description=None, allow_missing=False,
+    def run(self, opt, method, description=None, allow_missing=False,  # noqa, pylint: disable=R0911
             ignore_fails=False):
         assertion = self.assertions[opt][method]
         application = self.bundle_apps[self.app_name]
@@ -677,17 +654,17 @@ if __name__ == "__main__":
         print("    charm: <regex>")
         print("      <charm-option>:")
         print("      assertions:")
-        for key, value in asshelper.schema.items():
+        for key, _value in asshelper.schema.items():
             print("        {}:".format(key))
-            print("          description: {}".format(value['description']))
+            print("          description: {}".format(_value['description']))
             opts = asshelper.assertion_opts_common()
-            for opt in opts:
-                if opt in value:
-                    if value[opt]:
-                        print("          {}: {}".format(opt, value[opt]))
+            for _opt in opts:
+                if _opt in _value:
+                    if _value[_opt]:
+                        print("          {}: {}".format(_opt, _value[_opt]))
                     continue
-                values = opts[opt]
-                print("          {}: {}".format(opt, values))
+                values = opts[_opt]
+                print("          {}: {}".format(_opt, values))
         print("")
         sys.exit(0)
 
@@ -715,71 +692,75 @@ if __name__ == "__main__":
     bundle_sha = hashlib.sha1()
     bundle_sha.update(open(bundle, 'rb').read())
 
-    logger = Logger("ua-bundle-checks.{}.log".format(args.type),
+    _logger = Logger("ua-bundle-checks.{}.log".format(args.type),
                     not args.quiet)
-    logger.log(HEADER_TEMPLATE.format(datetime.datetime.now(), args.type,
+    _logger.log(HEADER_TEMPLATE.format(datetime.datetime.now(), args.type,
                                       bundle, bundle_sha.hexdigest(),
                                       checks_sha.hexdigest()), stdout=True)
 
     try:
         bundle_blob = open(bundle).read()
     except Exception as e:
-        logger.log("ERROR: Error opening/reading bundle file: {}".format(e))
+        _logger.log("ERROR: Error opening/reading bundle file: {}".format(e))
         sys.exit(1)
 
     try:
         bundle_yaml = yaml.safe_load(bundle_blob)
     except Exception as e:
-        logger.log("ERROR: Error parsing the bundle file: {}".format(e))
-        logger.log("Please check the above errors and run again.")
+        _logger.log("ERROR: Error parsing the bundle file: {}".format(e))
+        _logger.log("Please check the above errors and run again.")
         sys.exit(1)
 
     try:
-        bundle_apps = bundle_yaml['applications']
+        _bundle_apps = bundle_yaml['applications']
     except KeyError:
-        bundle_apps = bundle_yaml['services']
+        _bundle_apps = bundle_yaml['services']
 
     check_defs = yaml.safe_load(open(checks_path).read())
     checks_run = []
 
-    for label in check_defs['checks']:
-        charm = check_defs['checks'][label]['charm']
-        assertions = check_defs['checks'][label].get('assertions')
-        if not assertions:
+    for _label in check_defs['checks']:
+        _charm = check_defs['checks'][_label]['charm']
+        _assertions = check_defs['checks'][_label].get('assertions')
+        if not _assertions:
             if not args.errors_only:
-                logger.log("INFO: {} has no assertions defined".format(label))
+                _logger.log("INFO: {} has no assertions defined".
+                            format(_label))
             continue
 
         # Always add channel check if not explicitly set in checks.
-        if 'channel' not in assertions:
-            assertions['channel'] = {'assert_channel': {
-                                        'scope': 'application'}}
+        chan_assert = _assertions.get('channel')
+        if (not chan_assert or
+                chan_assert.get('assert_channel', {}).get('scope') !=
+                'application'):
+            _assertions['charmhub_channel'] = {'assert_channel': {
+                                               'scope': 'application'}}
 
-        checker = UABundleChecker(bundle_apps, charm, assertions,
-                                  args.fce_config, logger)
+        checker = UABundleChecker(_bundle_apps, _charm, _assertions,
+                                  args.fce_config, _logger)
         matches = checker.has_charm_matches()
         if not args.errors_only and not matches:
-            logger.log("INFO: no match found for {} - skipping"
+            _logger.log("INFO: no match found for {} - skipping"
                        .format(checker.charm_regex))
         checker.run_assertions()
         checks_run.append(checker)
 
-    logger.log("\nResults:")
-    summary = {s: 0 for rc, s in CheckResult.RC_MAP.items()}
+    _logger.log("\nResults:")
+    main_summary = {s: 0 for rc, s in CheckResult.RC_MAP.items()}
     for check in checks_run:
-        s = check.get_results_summary()
-        for cat in s:
-            if summary.get(cat):
-                summary[cat] += s[cat]
+        check_summary = check.get_results_summary()
+        for cat in check_summary:
+            if main_summary.get(cat):
+                main_summary[cat] += check_summary[cat]
             else:
-                summary[cat] = s[cat]
+                main_summary[cat] = check_summary[cat]
 
         check.show_results(ignore_pass=args.errors_only)
 
     # Show summary
-    logger.log("\nSummary:", stdout=True)
-    for cat in summary:
-        logger.log(" {}: {}".format(cat, summary[cat]), stdout=True)
+    _logger.log("\nSummary:", stdout=True)
+    for cat in main_summary:
+        _logger.log(" {}: {}".format(cat, main_summary[cat]), stdout=True)
 
     print("\nINFO: see --help for more options")
-    print("Results saved in {}".format(logger.logfile))
+    print("Results saved in {}".format(_logger.logfile))

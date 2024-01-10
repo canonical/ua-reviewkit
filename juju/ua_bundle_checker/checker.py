@@ -271,9 +271,12 @@ class LocalAssertionHelpers(AssertionBase):
     def assert_channel(self, application, warn_on_fail=False,
                        description=None):
         channel = application.get('channel')
-        _ret = re.match(r'.*latest/\S+', channel)
         ret = CheckResult(opt="charmhub channel ({})".format(channel))
         if not channel:
+            if application['charm'].startswith('local:'):
+                # no channel expected if its a local charm
+                return ret
+
             ret.reason = ("channel is unset - see {}".
                           format(OST_CHARM_CHANNELS_GUIDE_URL))
             if description:
@@ -283,7 +286,11 @@ class LocalAssertionHelpers(AssertionBase):
                 ret.rc = CheckResult.WARN
             else:
                 ret.rc = CheckResult.FAIL
-        elif _ret:
+
+            return ret
+
+        _ret = re.match(r'.*latest/\S+', channel)
+        if _ret:
             ret.reason = ("channel is set to {} which is "
                           "not supported - see {}".
                           format(_ret.group(0), OST_CHARM_CHANNELS_GUIDE_URL))

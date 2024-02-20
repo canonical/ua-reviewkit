@@ -264,6 +264,8 @@ checks:
         assert_ha:
           scope: application
       channel:
+        allow_default:
+          scope: config
         neq:
           scope: config
           source: local

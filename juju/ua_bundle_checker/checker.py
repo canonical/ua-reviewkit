@@ -461,8 +461,7 @@ class UABundleChecker(object):
         if not self.results:
             return
 
-        for app in self.results:
-            results = self.results[app]
+        for app, results in self.results.items():
             if ignore_pass and set(results.keys()) == set(["PASS"]):
                 continue
 
@@ -476,8 +475,7 @@ class UABundleChecker(object):
 
     def get_results_summary(self):
         summary = {}
-        for app in self.results:
-            results = self.results[app]
+        for results in self.results.values():
             for category in results:
                 if category in summary:
                     summary[category] += len(results[category])
@@ -504,8 +502,8 @@ class UABundleChecker(object):
         """
         _methods = []
         schema = LocalAssertionHelpers(None).schema
-        for method in schema:
-            if schema[method].get('override_method'):
+        for method, settings in schema.items():
+            if settings.get('override_method'):
                 _methods.append(method)
 
         overrides = {}
@@ -635,23 +633,7 @@ class UABundleChecker(object):
         return len(self.applications) > 0
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--type', '-t', type=str,
-                        default='openstack',
-                        required=False,
-                        help="Type of bundle (openstack, kubernetes etc)")
-    parser.add_argument('--fce-config', type=str,
-                        required=False, help="Path to FCE config.")
-    parser.add_argument('--bundle', '-b', type=str,
-                        required=False, help="Path to alternate bundle. "
-                        "Default is to use $FCE_CONFIG/bundle.yaml")
-    parser.add_argument('--errors-only', action='store_true', default=False,
-                        help="Exclude [PASS] info.")
-    parser.add_argument('--quiet', '-q', action='store_true', default=False)
-    parser.add_argument('--schema', action='store_true', default=False)
-    args = parser.parse_args()
-
+def setup(args):
     if args.schema:
         asshelper = LocalAssertionHelpers(None)
         print("# Assertion schema generated using 'ua-bundle-check.py "
@@ -665,13 +647,14 @@ if __name__ == "__main__":
             print("        {}:".format(key))
             print("          description: {}".format(_value['description']))
             opts = asshelper.assertion_opts_common()
-            for _opt in opts:
+            for _opt, _opt_val in opts.items():
                 if _opt in _value:
-                    if _value[_opt]:
-                        print("          {}: {}".format(_opt, _value[_opt]))
+                    if _opt_val:
+                        print("          {}: {}".format(_opt, _opt_val))
+
                     continue
-                values = opts[_opt]
-                print("          {}: {}".format(_opt, values))
+
+                print("          {}: {}".format(_opt, _opt_val))
         print("")
         sys.exit(0)
 
@@ -694,10 +677,12 @@ if __name__ == "__main__":
     script_root = os.path.dirname(__file__)
     checks_path = os.path.join(script_root, 'checks/{}.yaml'.format(args.type))
     checks_sha = hashlib.sha1()
-    checks_sha.update(open(checks_path, 'rb').read())
+    with open(checks_path, 'rb') as fd:
+        checks_sha.update(fd.read())
 
     bundle_sha = hashlib.sha1()
-    bundle_sha.update(open(bundle, 'rb').read())
+    with open(bundle, 'rb') as fd:
+        bundle_sha.update(fd.read())
 
     _logger = Logger("ua-bundle-checks.{}.log".format(args.type),
                     not args.quiet)
@@ -706,7 +691,8 @@ if __name__ == "__main__":
                                       checks_sha.hexdigest()), stdout=True)
 
     try:
-        bundle_blob = open(bundle).read()
+        with open(bundle) as fd:
+            bundle_blob = fd.read()
     except Exception as e:
         _logger.log("ERROR: Error opening/reading bundle file: {}".format(e))
         sys.exit(1)
@@ -723,7 +709,9 @@ if __name__ == "__main__":
     except KeyError:
         _bundle_apps = bundle_yaml['services']
 
-    check_defs = yaml.safe_load(open(checks_path).read())
+    with open(checks_path) as fd:
+        check_defs = yaml.safe_load(fd.read())
+
     checks_run = []
 
     for _label in check_defs['checks']:
@@ -771,3 +759,21 @@ if __name__ == "__main__":
 
     print("\nINFO: see --help for more options")
     print("Results saved in {}".format(_logger.logfile))
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--type', '-t', type=str,
+                        default='openstack',
+                        required=False,
+                        help="Type of bundle (openstack, kubernetes etc)")
+    parser.add_argument('--fce-config', type=str,
+                        required=False, help="Path to FCE config.")
+    parser.add_argument('--bundle', '-b', type=str,
+                        required=False, help="Path to alternate bundle. "
+                        "Default is to use $FCE_CONFIG/bundle.yaml")
+    parser.add_argument('--errors-only', action='store_true', default=False,
+                        help="Exclude [PASS] info.")
+    parser.add_argument('--quiet', '-q', action='store_true', default=False)
+    parser.add_argument('--schema', action='store_true', default=False)
+    setup(parser.parse_args())

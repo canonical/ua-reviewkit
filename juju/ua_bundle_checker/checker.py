@@ -251,7 +251,8 @@ class LocalAssertionHelpers(AssertionBase):
                 'warn-on-fail': 'bool',
                 'skip': 'bool'}
 
-    def assert_ha(self, application, warn_on_fail=False, description=None):
+    def assert_ha(self, application, _, warn_on_fail=False,
+                  description=None):
         _min = 3
         num_units = self.get_units(application)
         ret = CheckResult(opt="HA (>={})".format(_min))
@@ -268,7 +269,7 @@ class LocalAssertionHelpers(AssertionBase):
 
         return ret
 
-    def assert_channel(self, application, warn_on_fail=False,
+    def assert_channel(self, application, value, warn_on_fail=False,
                        description=None):
         channel = application.get('channel')
         ret = CheckResult(opt="charmhub channel ({})".format(channel))
@@ -289,18 +290,26 @@ class LocalAssertionHelpers(AssertionBase):
 
             return ret
 
-        _ret = re.match(r'.*latest/\S+', channel)
-        if _ret:
-            ret.reason = ("channel is set to {} which is "
-                          "not supported - see {}".
-                          format(_ret.group(0), OST_CHARM_CHANNELS_GUIDE_URL))
-            if description:
-                ret.reason = "{}: {}".format(ret.reason, description)
+        if value is None:
+            _ret = re.match(r'.*latest/\S+', channel)
+            if not _ret:
+                return ret
 
-            if warn_on_fail:
-                ret.rc = CheckResult.WARN
-            else:
-                ret.rc = CheckResult.FAIL
+            channel = _ret.group(0)
+        else:
+            if value == channel:
+                return ret
+
+        ret.reason = ("channel is set to {} which is "
+                      "not supported - see {}".
+                      format(channel, OST_CHARM_CHANNELS_GUIDE_URL))
+        if description:
+            ret.reason = "{}: {}".format(ret.reason, description)
+
+        if warn_on_fail:
+            ret.rc = CheckResult.WARN
+        else:
+            ret.rc = CheckResult.FAIL
 
         return ret
 
@@ -564,7 +573,8 @@ class UABundleChecker(object):
         assertion_scope = assertion.get('scope', 'config')
         if assertion_scope == "application":
             result = getattr(self.local_assertion_helpers,
-                             method)(application, warn_on_fail=warn_on_fail)
+                             method)(application, assertion.get('value'),
+                                     warn_on_fail=warn_on_fail)
             self.add_result(result)
             return result.passed
 

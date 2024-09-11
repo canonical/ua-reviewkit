@@ -252,6 +252,13 @@ checks:
   sysconfig:
     charm: sysconfig
     assertions:
+      channel:
+        # etcd charm is shipped in the latest/stable channel and has no
+        # stable channels so we override the default check to allow
+        # latest/stable.
+        assert_channel:
+          scope: application
+          value: latest/stable
       governor:
         eq:
           scope: config

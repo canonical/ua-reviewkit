@@ -708,7 +708,10 @@ def setup(args):
         sys.exit(1)
 
     try:
-        bundle_yaml = yaml.safe_load(bundle_blob)
+        # using safe_load_all() to handle bundle files with multiple
+        # streams (i.e., yaml docs), e.g., bundles with cross model
+        # relations
+        bundle_yaml = list(yaml.safe_load_all(bundle_blob))[0]
     except Exception as e:
         _logger.log("ERROR: Error parsing the bundle file: {}".format(e))
         _logger.log("Please check the above errors and run again.")

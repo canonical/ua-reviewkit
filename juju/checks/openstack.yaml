@@ -170,13 +170,13 @@ checks:
         assert_ha:
           scope: application
       global-physnet-mtu:
-        eq:
+        gte:
           scope: config
           source: local
           value: 9000
           warn-on-fail: true
           description: >-
-            While not a hard requirment, we currently recommend using Jumbo
+            While not a hard requirement, we currently recommend using Jumbo
             frames for this setting so as to allow enough flexibility for
             all neutron networks.
   neutron-gateway:

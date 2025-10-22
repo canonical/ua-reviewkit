@@ -205,15 +205,29 @@ checks:
           source: master
           value: '.*kernel_opts:.+isolcpus=([0-9\-,]+).*'
           warn-on-fail: true
-      cpu-model:
+      cpu-models:
         isset:
           scope: config
           source: bundle
-          warn-on-fail: true
+          supersedes: cpu-model
+          additional_info: >-
+            Check https://charmhub.io/nova-compute/configurations#cpu-model
+            for details.
           description: >-
             This should be set to the highest available cpu model across all
             nodes to avoid problems with cpu feature incompatibility when
             performing live-migrations.
+      virt-type:
+        allow_default:
+          scope: config
+          source: bundle
+        eq:
+          scope: config
+          source: bundle
+          value: "kvm"
+          description: >-
+            For production environments 'virt-type' must be set to 'kvm' or
+            left to the default.
       ephemeral-device:
         allow_default:
           scope: config

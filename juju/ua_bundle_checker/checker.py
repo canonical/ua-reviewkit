@@ -23,6 +23,7 @@ import argparse
 import datetime
 import hashlib
 import re
+
 import yaml
 
 CSI = "\033["
@@ -171,47 +172,50 @@ class LocalAssertionHelpers(AssertionBase):
         super().__init__()
         self.bundle_apps = bundle_apps
         self.schema = {'allow_default':
-                       {'description':
+                       {'purpose':
                         '"Allow charm default if config not provided."',
                         'scope': 'config',
                         'source': 'bundle',
                         'value': None,
                         'override_method': True},
                        self.skip_if_charm_exists.__name__:
-                       {'description':
+                       {'purpose':
                         '"Skip check if charm exists"',
                         'source': 'bundle',
                         'value': None,
                         'override_method': True},
                        self.assert_channel.__name__:
-                       {'description':
+                       {'purpose':
                         '"Ensure application using valid charmhub channel"',
                         'scope': 'application',
                         'source': 'bundle'},
                        self.assert_ha.__name__:
-                       {'description':
+                       {'purpose':
                         '"Ensure application has minimum number of units"',
                         'scope': 'application',
                         'source': 'bundle',
                         'value': None},
                        self.gte.__name__:
-                       {'description':
+                       {'purpose':
                         '"Ensure option is gte to value"'},
                        self.eq.__name__:
-                       {'description':
+                       {'purpose':
                         '"Ensure option equal to value"'},
                        self.neq.__name__:
-                       {'description':
+                       {'purpose':
                         '"Ensure option not equal to value"'},
                        self.isset.__name__:
-                       {'description':
+                       {'purpose':
                         '"Ensure option has a provided value"',
                         'source': 'bundle',
-                        'value': None}}
+                        'supersedes': 'Name of the deprecated option',
+                        'additional_info':
+                        '"Additional information when supersedes '
+                        'option is set"'}}
 
     def allow_default(self, application, opt,
                       value, warn_on_fail=False,  # pylint: disable=W0613
-                      description=None):
+                      description=None, **_kwargs):
         ret = CheckResult(opt=opt)
         if opt not in application.get('options', []):
             ret.reason = "using charm config default"
@@ -224,7 +228,7 @@ class LocalAssertionHelpers(AssertionBase):
         return ret
 
     def skip_if_charm_exists(self, application, opt, value, warn_on_fail=False,  # noqa pylint: disable=W0613
-                             description=None):
+                             description=None, **_kwargs):
         ret = CheckResult()
         regex_str = value
         for app in self.bundle_apps:
@@ -249,10 +253,11 @@ class LocalAssertionHelpers(AssertionBase):
                 'value': "<value>  # if 'source: master' this must "
                          "be regex with single substring match",
                 'warn-on-fail': 'bool',
-                'skip': 'bool'}
+                'skip': 'bool',
+                'description': 'str'}
 
     def assert_ha(self, application, _, warn_on_fail=False,
-                  description=None):
+                  description=None, **_kwargs):
         _min = 3
         num_units = self.get_units(application)
         ret = CheckResult(opt="HA (>={})".format(_min))
@@ -270,7 +275,7 @@ class LocalAssertionHelpers(AssertionBase):
         return ret
 
     def assert_channel(self, application, value, warn_on_fail=False,
-                       description=None):
+                       description=None, **_kwargs):
         channel = application.get('channel')
         ret = CheckResult(opt="charmhub channel ({})".format(channel))
         if not channel:
@@ -314,7 +319,7 @@ class LocalAssertionHelpers(AssertionBase):
         return ret
 
     def gte(self, application, opt, value, warn_on_fail=False,
-            description=None):
+            description=None, **_kwargs):
         current = application.get('options', [])[opt]
         current = self.atoi(current)
         expected = self.atoi(value)
@@ -332,7 +337,7 @@ class LocalAssertionHelpers(AssertionBase):
         return ret
 
     def neq(self, application, opt, value, warn_on_fail=False,
-            description=None):
+            description=None, **_kwargs):
         current = application.get('options', [])[opt]
         current = self.atoi(current)
         expected = self.atoi(value)
@@ -350,7 +355,7 @@ class LocalAssertionHelpers(AssertionBase):
         return ret
 
     def eq(self, application, opt, value, warn_on_fail=False,
-           description=None):
+           description=None, **_kwargs):
         current = application.get('options', [])[opt]
         current = self.atoi(current)
         expected = self.atoi(value)
@@ -368,10 +373,35 @@ class LocalAssertionHelpers(AssertionBase):
         return ret
 
     def isset(self, app, opt, value, warn_on_fail=False,  # noqa pylint: disable=W0613
-              description=None):
-        current = app.get('options', [])[opt]
-        ret = CheckResult(opt=opt, reason="value={}".format(current))
-        if not current:
+              description=None, **kwargs):
+        deprecated_opt = kwargs.get('supersedes', "")
+        extra_info = kwargs.get('additional_info', "")
+        current_value = app.get('options', []).get(opt, None)
+        ret = CheckResult(opt=opt, reason="value={}".format(current_value))
+
+        deprecated_value = None
+        if deprecated_opt:
+            deprecated_value = app.get('options', []).get(deprecated_opt, None)
+
+        if deprecated_value:
+            # deprecated option present in the app's config
+            if current_value:
+                # current option is also set
+                ret.reason = ("{}; both '{}' and '{}' are set.".
+                              format(ret.reason, opt, deprecated_opt))
+            else:
+                # current option not set
+                ret = CheckResult(opt=deprecated_opt,
+                                  reason="value={}".format(deprecated_value))
+                ret.reason = (("{}; this option is deprecated. "
+                               "'{}' should be used instead. ").
+                              format(ret.reason, opt))
+            if extra_info:
+                ret.reason = "{} {}".format(ret.reason, extra_info)
+            ret.rc = CheckResult.WARN
+
+        elif not current_value:
+            # neither deprecated nor current options are set
             ret.reason = "no value set"
             if description:
                 ret.reason = "{}: {}".format(ret.reason, description)
@@ -395,7 +425,7 @@ class LocalAssertionHelpers(AssertionBase):
         return devs
 
     def exclusive_backing_dev(self, app, opt, value, warn_on_fail=False,
-                              description=None):
+                              description=None, **_kwargs):
         current = app.get('options', [])[opt]
         ret = CheckResult(opt=opt, reason="value={}".format(current))
 
@@ -436,7 +466,7 @@ class MasterAssertionHelpers(LocalAssertionHelpers):
         super().__init__(bundle_apps=None)
         self.master_path = master_path
 
-    def eq(self, application, opt, value, warn_on_fail=False):
+    def eq(self, application, opt, value, warn_on_fail=False, **_kwargs):
         # FIXME(hopem): this check is not currently viable since it requires
         # checking many different sources and cross-referencing them to ensure
         # they are correct e.g. kernel_opts can be provided is maas tags or
@@ -524,8 +554,9 @@ class UABundleChecker(object):
                     else:
                         overrides[opt] = {method: False}
 
+                    desc = self.assertions[opt][method].get("description")
                     passed = self.run(opt, method, allow_missing=True,
-                                      ignore_fails=True)
+                                      ignore_fails=True, description=desc)
                     if passed:
                         overrides[opt][method] = True
 
@@ -578,7 +609,8 @@ class UABundleChecker(object):
             self.add_result(result)
             return result.passed
 
-        if not allow_missing and not self.opt_exists(opt):
+        supersedes = assertion.get('supersedes', False)
+        if not allow_missing and not self.opt_exists(opt) and not supersedes:
             result = CheckResult(CheckResult.FAIL, opt=opt,
                                  reason="not found")
             self.add_result(result)
@@ -617,10 +649,12 @@ class UABundleChecker(object):
             raise Exception("Unknown assertion data source '{}'".format(
                 assertion_source))
 
+        kwargs = self._get_kwargs(assertion)
         result = getattr(self.local_assertion_helpers,
                          method)(application, opt, value,
                                  description=description,
-                                 warn_on_fail=warn_on_fail)
+                                 warn_on_fail=warn_on_fail,
+                                 **kwargs)
 
         if result.passed or not ignore_fails:
             self.add_result(result)
@@ -642,6 +676,11 @@ class UABundleChecker(object):
         self.get_applications()
         return len(self.applications) > 0
 
+    @staticmethod
+    def _get_kwargs(assertion):
+        common_opts = LocalAssertionHelpers.assertion_opts_common()
+        return {k: v for k, v in assertion.items() if k not in common_opts}
+
 
 def setup(args):
     if args.schema:
@@ -655,16 +694,15 @@ def setup(args):
         print("      assertions:")
         for key, _value in asshelper.schema.items():
             print("        {}:".format(key))
-            print("          description: {}".format(_value['description']))
-            opts = asshelper.assertion_opts_common()
-            for _opt, _opt_val in opts.items():
-                if _opt in _value:
-                    if _opt_val:
-                        print("          {}: {}".format(_opt, _opt_val))
-
-                    continue
-
-                print("          {}: {}".format(_opt, _opt_val))
+            print("          purpose: {}".format(_value['purpose']))
+            print("          params:")
+            _common_params = {k: v for k, v in
+                             asshelper.assertion_opts_common().items() if
+                             k not in _value}
+            _value.update(_common_params)
+            del _value['purpose']
+            for _param, _param_value in _value.items():
+                print("            {}: {}".format(_param, _param_value))
         print("")
         sys.exit(0)
 

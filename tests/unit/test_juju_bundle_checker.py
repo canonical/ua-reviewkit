@@ -1,7 +1,7 @@
 import re
 import unittest
 
-from ua_bundle_checker.checker import (
+from ua_bundle_checker.assertion.commands import (
     CheckResult,
     AssertionBase,
     CHARM_REGEX_TEMPLATE
@@ -35,6 +35,7 @@ id_url_samples = {
 
 
 class TestJujuBundleChecker(unittest.TestCase):
+    """ Tests for the Juju bundle checker """
 
     def test_check_result_pass(self):
         c = CheckResult()
@@ -45,36 +46,37 @@ class TestJujuBundleChecker(unittest.TestCase):
         self.assertFalse(c.passed)
 
     def test_assertion_base_atoi(self):
-        self.assertEqual(AssertionBase().atoi("100k"), 100 * 1000)
-        self.assertEqual(AssertionBase().atoi("100K"), 100 * 1024)
-        self.assertEqual(AssertionBase().atoi("100m"), 100 * 1000 ** 2)
-        self.assertEqual(AssertionBase().atoi("100M"), 100 * 1024 ** 2)
-        self.assertEqual(AssertionBase().atoi("100g"), 100 * 1000 ** 3)
-        self.assertEqual(AssertionBase().atoi("100G"), 100 * 1024 ** 3)
+        self.assertEqual(AssertionBase({}).atoi("100k"), 100 * 1000)
+        self.assertEqual(AssertionBase({}).atoi("100K"), 100 * 1024)
+        self.assertEqual(AssertionBase({}).atoi("100m"), 100 * 1000 ** 2)
+        self.assertEqual(AssertionBase({}).atoi("100M"), 100 * 1024 ** 2)
+        self.assertEqual(AssertionBase({}).atoi("100g"), 100 * 1000 ** 3)
+        self.assertEqual(AssertionBase({}).atoi("100G"), 100 * 1024 ** 3)
 
     def test_assertion_base_get_units(self):
         app = {'num_units': 3}
-        self.assertEqual(AssertionBase().get_units(app), 3)
+        self.assertEqual(AssertionBase({}).get_units(app), 3)
         app = {'scale': 3}
-        self.assertEqual(AssertionBase().get_units(app), 3)
+        self.assertEqual(AssertionBase({}).get_units(app), 3)
         app = {}
-        self.assertEqual(AssertionBase().get_units(app), 1)
+        self.assertEqual(AssertionBase({}).get_units(app), 1)
 
 
 class TestCharmNameRegex(unittest.TestCase):
+    """ Tests for the Juju bundle checker charm name regex. """
+
     def test_regex(self):
         for app_name, asserts in id_url_samples.items():
             for sample in asserts['should_match']:
                 r = re.compile(
                     CHARM_REGEX_TEMPLATE.format(
                         app_name, app_name, app_name)).match(sample)
-                msg = "App '{}' should match with {}".format(app_name, sample)
+                msg = f"App '{app_name}' should match with {sample}"
                 self.assertIsNotNone(r, msg)
 
             for sample in asserts['should_not_match']:
                 r = re.compile(
                     CHARM_REGEX_TEMPLATE.format(
                         app_name, app_name, app_name)).match(sample)
-                msg = "App '{}' should not match with {}".format(app_name,
-                                                                 sample)
+                msg = f"App '{app_name}' should not match with {sample}"
                 self.assertIsNone(r, msg)

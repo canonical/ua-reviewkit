@@ -47,7 +47,7 @@ checks:
   mysql-router:
     charm: mysql-router
     assertions:
-      channel:
+      charm_channel:
         assert_channel:
           scope: application
   rabbitmq-server:
@@ -210,7 +210,7 @@ checks:
           scope: config
           source: bundle
           supersedes: cpu-model
-          additional_info: >-
+          additional-info: >-
             Check https://charmhub.io/nova-compute/configurations#cpu-model
             for details.
           description: >-
@@ -266,7 +266,7 @@ checks:
   sysconfig:
     charm: sysconfig
     assertions:
-      channel:
+      charm_channel:
         # etcd charm is shipped in the latest/stable channel and has no
         # stable channels so we override the default check to allow
         # latest/stable.

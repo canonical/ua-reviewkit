@@ -20,7 +20,7 @@ def main():
         sys.exit(-1)
 
     status = sys.argv[1]
-    print("List of tests with {} status:".format(status))
+    print(f"List of tests with {status} status:")
     for test in __filter_tests(status=status):
         print(test['name'])
 

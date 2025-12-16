@@ -294,7 +294,7 @@ def finish(checks_run):
     print(f"Results saved in {OUT.logfile}")
 
 
-def run_checks(check_defs, args, bundle_apps):
+def run_checks(checks, args, bundle_apps):
     """
     Execute all assertions.
 
@@ -302,15 +302,11 @@ def run_checks(check_defs, args, bundle_apps):
           provided in the yaml.
     """
     checks_run = []
-    for label, assertions in check_defs['checks'].items():
-        section = check_defs['checks'][label]
-        assertions = section.get('assertions')
-        if not assertions:
-            if not args.errors_only:
-                OUT.print(f"INFO: {label} has no assertions defined")
+    for label, assertions in checks.items():
+        section = checks[label]
+        assertions = section.get('assertions') or {}
 
-            continue
-
+        # Ensure we check charm_channel for all charms
         key = 'charm_channel'
         if (key not in assertions or
                 assertions[key].get(AssertionAssertChannel.NAME,
@@ -331,6 +327,56 @@ def run_checks(check_defs, args, bundle_apps):
         checks_run.append(checker)
 
     return checks_run
+
+
+class ChecksManager:
+    """
+    Manage checks source. The user provides the type of bundle we are checking
+    and that type maps to a checks yaml filename.
+
+    A checks yaml can contain different groups of checks. By default the first
+    group is used. To select a specific group, the name can be appended to the
+    type name e.g. <type>:<group>.
+    """
+
+    def __init__(self, checks_type):
+        script_root = os.path.dirname(__file__)
+        self.group = None
+        self.path = os.path.join(script_root, f'checks/{checks_type}.yaml')
+        if not os.path.exists(self.path):
+            self.checks_type, _, self.group = checks_type.partition(':')
+            self.path = os.path.join(script_root,
+                                     f'checks/{self.checks_type}.yaml')
+        else:
+            self.checks_type = checks_type
+
+    @property
+    def hash(self):
+        checks_sha = hashlib.sha1()
+        with open(self.path, 'rb') as fd:
+            checks_sha.update(fd.read())
+
+        return checks_sha
+
+    @property
+    def checks(self):
+        """
+        If 'checks' is the root key return everything beneath otherwise look
+        for a matching group. If no group name is provided use the first one
+        found.
+        """
+        with open(self.path, encoding='utf-8') as fd:
+            check_defs = yaml.safe_load(fd.read())
+
+        for group, checks in check_defs.items():
+            if group == 'checks':
+                return checks
+
+            if self.group is None or self.group == group:
+                return checks['checks']
+
+        raise BundleCheckerError("no checks group found with name "
+                                 f"'{self.group}' in {self.path}")
 
 
 def setup(args):
@@ -354,20 +400,18 @@ def setup(args):
         print("ERROR: one of --bundle or --fce-config is required")
         sys.exit(1)
 
-    script_root = os.path.dirname(__file__)
-    checks_path = os.path.join(script_root, f'checks/{args.type}.yaml')
-    checks_sha = hashlib.sha1()
-    with open(checks_path, 'rb') as fd:
-        checks_sha.update(fd.read())
+    checks_mgr = ChecksManager(args.type)
 
     bundle_sha = hashlib.sha1()
     with open(bundle, 'rb') as fd:
         bundle_sha.update(fd.read())
 
-    OutputManager(f"ua-bundle-checks.{args.type}.log", not args.quiet).setup()
+    OutputManager(f"ua-bundle-checks.{checks_mgr.checks_type}.log",
+                  not args.quiet).setup()
     OUT.print(HEADER_TEMPLATE.format(datetime.datetime.now(), args.type,
                                      bundle, bundle_sha.hexdigest(),
-                                     checks_sha.hexdigest()), stdout=True)
+                                     checks_mgr.hash.hexdigest()),
+              stdout=True)
 
     try:
         with open(bundle, encoding='utf-8') as fd:
@@ -386,13 +430,10 @@ def setup(args):
     try:
         _bundle_apps = bundle_yaml['applications']
     except KeyError:
+        # legacy juju fallback
         _bundle_apps = bundle_yaml['services']
 
-    with open(checks_path, encoding='utf-8') as fd:
-        check_defs = yaml.safe_load(fd.read())
-
-    checks_run = run_checks(check_defs, args, _bundle_apps)
-    finish(checks_run)
+    finish(run_checks(checks_mgr.checks, args, _bundle_apps))
 
 
 if __name__ == "__main__":
@@ -400,7 +441,11 @@ if __name__ == "__main__":
     parser.add_argument('--type', '-t', type=str,
                         default='openstack',
                         required=False,
-                        help="Type of bundle (openstack, kubernetes etc)")
+                        help=("Type of bundle (openstack, kubernetes etc). "
+                             "This name maps to a checks file under the "
+                             "checks directory. If the checks are split into "
+                             "more than one group, a group can be choses by "
+                             "adding a :<group> to the end of the type."))
     parser.add_argument('--fce-config', type=str,
                         required=False, help="Path to FCE config.")
     parser.add_argument('--bundle', '-b', type=str,

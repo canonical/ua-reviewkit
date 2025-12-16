@@ -1,321 +1,461 @@
+# Checks for both Charmed OpenStack and Sunbeam deployments of OpenStack.
 # See README.md and 'ua-bundle-check.py --schema' for usage and schema details
-checks:
-  mysql-percona:
-    charm: percona-cluster
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-      innodb-buffer-pool-size:
-        gte:
-          scope: config
-          source: local
-          value: 6G
-          description: >-
-            mysql must be allowed to cache a useful amount of data corresponding
-            to the amount of memory available to the unit.
-      max-connections:
-        gte:
-          scope: config
-          source: local
-          value: 2000
-          description: >-
-            Openstack services will pool open connections so this value must
-            be high enough to accommodate your deployment.
-  mysql-innodb-cluster:
-    charm: mysql-innodb-cluster
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-      innodb-buffer-pool-size:
-        gte:
-          scope: config
-          source: local
-          value: 6G
-          description: >-
-            mysql must be allowed to cache a useful amount of data corresponding
-            to the amount of memory available to the unit.
-      max-connections:
-        gte:
-          scope: config
-          source: local
-          value: 2000
-          description: >-
-            Openstack services will pool open connections so this value must
-            be high enough to accommodate your deployment.
-  mysql-router:
-    charm: mysql-router
-    assertions:
-      charm_channel:
-        assert_channel:
-          scope: application
-  rabbitmq-server:
-    charm: rabbitmq-server
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-      cluster-partition-handling:
-        eq:
-          scope: config
-          source: local
-          value: "pause_minority"
-          description: >-
-            We recommend using "pause-minority".
-  etcd:
-    charm: etcd
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-  barbican:
-    charm: barbican
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-  ceph-mon:
-    charm: ceph-mon
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-  ceph-osd:
-    charm: ceph-osd
-    assertions:
-      bluestore-block-wal-size:
-        allow_default:
-          scope: config
-        gte:
-          scope: config
-          source: local
-          value: 1G
-  ceph-proxy:
-    charm: ceph-proxy
-    assertions:
-  ceph-radosgw:
-    charm: ceph-radosgw
-    assertions:
-      ceph-osd-replication-count:
-        allow_default:
-          scope: config
-        eq:
-          scope: config
-          source: local
-          value: 3
-  cinder:
-    charm: cinder
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-  cinder-ceph:
-    charm: cinder-ceph
-    assertions:
-      ceph-osd-replication-count:
-        allow_default:
-          scope: config
-        eq:
-          scope: config
-          source: local
-          value: 3
-  designate:
-    charm: designate
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-  glance:
-    charm: glance
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-      ceph-osd-replication-count:
-        allow_default:
-          scope: config
-        eq:
-          scope: config
-          source: local
-          value: 3
-  gnocchi:
-    charm: gnocchi
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-  heat:
-    charm: heat
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-  keystone:
-    charm: keystone
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-  manila:
-    charm: manila
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-  neutron-api:
-    charm: neutron-api
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-      global-physnet-mtu:
-        gte:
-          scope: config
-          source: local
-          value: 9000
-          warn-on-fail: true
-          description: >-
-            While not a hard requirement, we currently recommend using Jumbo
-            frames for this setting so as to allow enough flexibility for
-            all neutron networks.
-  neutron-gateway:
-    charm: neutron-gateway
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-          warn-on-fail: true
-  nova-cloud-controller:
-    charm: nova-cloud-controller
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-  nova-compute:
-    charm: nova-compute
-    assertions:
-      vcpu-pin-set:
-        allow_default:
-          scope: config
-        skip_if_charm_exists:
-          value: sysconfig
-        eq:
-          scope: config
-          source: master
-          value: '.*kernel_opts:.+isolcpus=([0-9\-,]+).*'
-          warn-on-fail: true
-      cpu-models:
-        isset:
-          scope: config
-          source: bundle
-          supersedes: cpu-model
-          additional-info: >-
-            Check https://charmhub.io/nova-compute/configurations#cpu-model
-            for details.
-          description: >-
-            This should be set to the highest available cpu model across all
-            nodes to avoid problems with cpu feature incompatibility when
-            performing live-migrations.
-      virt-type:
-        allow_default:
-          scope: config
-          source: bundle
-        eq:
-          scope: config
-          source: bundle
-          value: "kvm"
-          description: >-
-            For production environments 'virt-type' must be set to 'kvm' or
-            left to the default.
-      ephemeral-device:
-        allow_default:
-          scope: config
-          source: bundle
-        exclusive_backing_dev:
-          scope: config
-          source: bucketsconfig
-          description: >-
-            Ensure that nova instances path (if using bcache) is not backed by
-            the same physical disk used for the rootfs.
-      ceph-osd-replication-count:
-        allow_default:
-          scope: config
-        eq:
-          scope: config
-          source: local
-          value: 3
-  octavia:
-    charm: octavia
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-  placement:
-    charm: placement
-    assertions:
-      ha:
-        assert_ha:
-          scope: application    
-  swift-proxy:
-    charm: swift-proxy
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-  sysconfig:
-    charm: sysconfig
-    assertions:
-      charm_channel:
-        # etcd charm is shipped in the latest/stable channel and has no
-        # stable channels so we override the default check to allow
-        # latest/stable.
-        assert_channel:
-          scope: application
-          value: latest/stable
-      governor:
-        eq:
-          scope: config
-          source: local
-          value: "performance"
-  vault:
-    charm: vault
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-      channel:
-        allow_default:
-          scope: config
-        neq:
-          scope: config
-          source: local
-          value: stable
-          description: >-
-            The vault snap channel must not be set to "stable" as this
-            will result in whatever version of vault is available in
-            that channel being installed which will change over time
-            and may not be supported by the charm. Typically this
-            should be matched to the charm channel itself e.g. 1.7/stable.
-  hacluster:
-    charm: hacluster
-    assertions:
-      cluster_count:
-        allow_default:
-          scope: config
-        gte:
-          scope: config
-          source: local
-          value: 3
-  ovn-chassis:
-    charm: ovn-chassis
-  ovn-central:
-    charm: ovn-central
-  neutron-api-plugin-ovn:
-    charm: neutron-api-plugin-ovn
-    assertions:
-      dns-servers:
-        isset:
-          scope: config
-          source: bundle
 
+charmed-openstack:
+##############################################################################
+# Charmed OpenStack (group: charmed-openstack)
+# Description:
+#    this group contains checks for CharmedOpenStack charms. It is also the
+#    default group for this type. Sunbeam charms are covered by the sunbeam
+#    group (see help message for --type for information on how to select
+#    groups)
+##############################################################################
+  checks:
+    aodh:
+      charm: aodh
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    barbican:
+      charm: barbican
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    ceph-mon:
+      charm: ceph-mon
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    ceph-osd:
+      charm: ceph-osd
+      assertions:
+        bluestore-block-wal-size:
+          allow_default:
+            scope: config
+          gte:
+            scope: config
+            source: local
+            value: 1G
+    ceph-proxy:
+      charm: ceph-proxy
+    ceph-radosgw:
+      charm: ceph-radosgw
+      assertions:
+        ceph-osd-replication-count:
+          allow_default:
+            scope: config
+          eq:
+            scope: config
+            source: local
+            value: 3
+    cinder:
+      charm: cinder
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    cinder-ceph:
+      charm: cinder-ceph
+      assertions:
+        ceph-osd-replication-count:
+          allow_default:
+            scope: config
+          eq:
+            scope: config
+            source: local
+            value: 3
+    designate:
+      charm: designate
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    etcd:
+      charm: etcd
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    glance:
+      charm: glance
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+        ceph-osd-replication-count:
+          allow_default:
+            scope: config
+          eq:
+            scope: config
+            source: local
+            value: 3
+    gnocchi:
+      charm: gnocchi
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    heat:
+      charm: heat
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    keystone:
+      charm: keystone
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    manila:
+      charm: manila
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    mysql-percona:
+      charm: percona-cluster
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+        innodb-buffer-pool-size:
+          gte:
+            scope: config
+            source: local
+            value: 6G
+            description: >-
+              mysql must be allowed to cache a useful amount of data corresponding
+              to the amount of memory available to the unit.
+        max-connections:
+          gte:
+            scope: config
+            source: local
+            value: 2000
+            description: >-
+              Openstack services will pool open connections so this value must
+              be high enough to accommodate your deployment.
+    mysql-innodb-cluster:
+      charm: mysql-innodb-cluster
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+        innodb-buffer-pool-size:
+          gte:
+            scope: config
+            source: local
+            value: 6G
+            description: >-
+              mysql must be allowed to cache a useful amount of data corresponding
+              to the amount of memory available to the unit.
+        max-connections:
+          gte:
+            scope: config
+            source: local
+            value: 2000
+            description: >-
+              Openstack services will pool open connections so this value must
+              be high enough to accommodate your deployment.
+    mysql-router:
+      charm: mysql-router
+      assertions:
+        charm_channel:
+          assert_channel:
+            scope: application
+    rabbitmq-server:
+      charm: rabbitmq-server
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+        cluster-partition-handling:
+          eq:
+            scope: config
+            source: local
+            value: "pause_minority"
+            description: >-
+              We recommend using "pause-minority".
+    hacluster:
+      charm: hacluster
+      assertions:
+        cluster_count:
+          allow_default:
+            scope: config
+          gte:
+            scope: config
+            source: local
+            value: 3
+    neutron-api-plugin-ovn:
+      charm: neutron-api-plugin-ovn
+      assertions:
+        dns-servers:
+          isset:
+            scope: config
+            source: bundle
+    neutron-api:
+      charm: neutron-api
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+        global-physnet-mtu:
+          gte:
+            scope: config
+            source: local
+            value: 9000
+            warn-on-fail: true
+            description: >-
+              While not a hard requirement, we currently recommend using Jumbo
+              frames for this setting so as to allow enough flexibility for
+              all neutron networks.
+    neutron-gateway:
+      charm: neutron-gateway
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+            warn-on-fail: true
+    nova-cloud-controller:
+      charm: nova-cloud-controller
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    nova-compute:
+      charm: nova-compute
+      assertions:
+        vcpu-pin-set:
+          allow_default:
+            scope: config
+          skip_if_charm_exists:
+            value: sysconfig
+          eq:
+              scope: config
+              source: master
+              value: '.*kernel_opts:.+isolcpus=([0-9\-,]+).*'
+              warn-on-fail: true
+        cpu-models:
+          isset:
+            scope: config
+            source: bundle
+            supersedes: cpu-model
+            additional-info: >-
+              Check https://charmhub.io/nova-compute/configurations#cpu-model
+              for details.
+            description: >-
+              This should be set to the highest available cpu model across all
+              nodes to avoid problems with cpu feature incompatibility when
+              performing live-migrations.
+        virt-type:
+          allow_default:
+            scope: config
+            source: bundle
+          eq:
+            scope: config
+            source: bundle
+            value: "kvm"
+            description: >-
+              For production environments 'virt-type' must be set to 'kvm' or
+              left to the default.
+        ephemeral-device:
+          allow_default:
+            scope: config
+            source: bundle
+          exclusive_backing_dev:
+            scope: config
+            source: bucketsconfig
+            description: >-
+              Ensure that nova instances path (if using bcache) is not backed by
+              the same physical disk used for the rootfs.
+        ceph-osd-replication-count:
+          allow_default:
+            scope: config
+          eq:
+            scope: config
+            source: local
+            value: 3
+    octavia:
+      charm: octavia
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    ovn-chassis:
+      charm: ovn-chassis
+    ovn-central:
+      charm: ovn-central
+    placement:
+      charm: placement
+      assertions:
+        ha:
+          assert_ha:
+            scope: application    
+    swift-proxy:
+      charm: swift-proxy
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    sysconfig:
+      charm: sysconfig
+      assertions:
+        charm_channel:
+          # etcd charm is shipped in the latest/stable channel and has no
+          # stable channels so we override the default check to allow
+          # latest/stable.
+          assert_channel:
+            scope: application
+            value: latest/stable
+        governor:
+          eq:
+            scope: config
+            source: local
+            value: "performance"
+    vault:
+      charm: vault
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+        channel:
+          allow_default:
+            scope: config
+          neq:
+            scope: config
+            source: local
+            value: stable
+            description: >-
+              The vault snap channel must not be set to "stable" as this
+              will result in whatever version of vault is available in
+              that channel being installed which will change over time
+              and may not be supported by the charm. Typically this
+              should be matched to the charm channel itself e.g. 1.7/stable.
+    watcher:
+      charm: watcher
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+
+sunbeam:
+################################################################################
+# Sunbeam OpenStack (group: sunbeam)
+# Description: this group contains checks for Sunbeam OpenStack charms.
+################################################################################
+  checks:
+    aodh-k8s:
+      charm: aodh-k8s
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    cinder-k8s:
+      charm: cinder-k8s
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    designate-k8s:
+      charm: designate-k8s
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    cinder-volume:
+      charm: cinder-volume
+    barbican-k8s:
+      charm: barbican-k8s
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    glance-k8s:
+      charm: glance-k8s
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    heat-k8s:
+      charm: heat-k8s
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    horizon-k8s:
+      charm: horizon-k8s
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    keystone-k8s:
+      charm: keystone-k8s
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    magnum-k8s:
+      charm: magnum-k8s
+    manila-k8s:
+      charm: manila-k8s
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    mysql-k8s:
+      charm: mysql-k8s
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    mysql-router-k8s:
+      charm: mysql-router-k8s
+    neutron-k8s:
+      charm: neutron-k8s
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    nova-k8s:
+      charm: nova-k8s
+    octavia-k8s:
+      charm: octavia-k8s
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    ovn-central-k8s:
+      charm: ovn-central-k8s
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    ovn-relay-k8s:
+      charm: ovn-relay-k8s
+    placement-k8s:
+      charm: placement-k8s
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    rabbitmq-k8s:
+      charm: rabbitmq-k8s
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    self-signed-certificates:
+      charm: self-signed-certificates
+    traefik-k8s:
+      charm: traefik-k8s
+    vault-k8s:
+      charm: vault-k8s
+    watcher-k8s:
+      charm: watcher-k8s
+      assertions:
+        ha:
+          assert_ha:
+            scope: application

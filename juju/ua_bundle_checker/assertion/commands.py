@@ -25,6 +25,7 @@ import yaml
 
 from ua_bundle_checker.assertion.opts import (
     AssertionOptsCommon,
+    AssertHAAssertionOpts,
     IsSetAssertionOpts,
 )
 
@@ -241,18 +242,17 @@ class AssertionAssertHA(AssertionBase):
     """
     Return True if number of units >= expected.
     """
-    OPTS = AssertionOptsCommon
+    OPTS = AssertHAAssertionOpts
 
     def __call__(self, charm_config_opt, application):
         if self.conf.skip:
             return CheckResult(rc=CheckResult.SKIPPED, opt=charm_config_opt)
 
-        _min = 3
         num_units = self.get_units(application)
-        ret = CheckResult(opt=f"HA (>={_min})")
-        if num_units < _min:
+        ret = CheckResult(opt=f"HA (>={self.conf.min_units})")
+        if num_units < self.conf.min_units:
             ret.reason = (f"not enough units (value={num_units}, "
-                          f"expected='>={_min}')")
+                          f"expected='>={self.conf.min_units}')")
             if self.conf.description:
                 ret.reason = f"{ret.reason}: {self.conf.description}"
 

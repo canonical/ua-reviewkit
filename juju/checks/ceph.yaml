@@ -11,10 +11,7 @@ checks:
     assertions:
       bluestore-block-wal-size:
         allow_default:
-          scope: config
         gte:
-          scope: config
-          source: local
           value: 1G
   ceph-proxy:
     charm: ceph-proxy
@@ -24,8 +21,5 @@ checks:
     assertions:
       ceph-osd-replication-count:
         allow_default:
-          scope: config
         eq:
-          scope: config
-          source: local
           value: 3

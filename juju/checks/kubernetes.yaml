@@ -17,7 +17,6 @@ charmed-kubernetes:
       assertions:
         cidr:
           isset:
-            scope: config
             source: bundle
             value: ""
     ceph-csi:
@@ -39,10 +38,7 @@ charmed-kubernetes:
       assertions:
         cluster_count:
           allow_default:
-            scope: config
           gte:
-            scope: config
-            source: local
             value: 3
     kubernetes-control-plane:
       charm: kubernetes-control-plane
@@ -52,10 +48,7 @@ charmed-kubernetes:
             scope: application
         authorization-mode:
           allow_default:
-            scope: config
           eq:
-            scope: config
-            source: local
             value: "RBAC,Node"
     kubernetes-worker:
       charm: kubernetes-worker
@@ -89,10 +82,7 @@ charmed-kubernetes:
             scope: application
         channel:
           allow_default:
-            scope: config
           neq:
-            scope: config
-            source: local
             value: stable
             description: >-
               The vault snap channel must not be set to "stable" as this

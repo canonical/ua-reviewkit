@@ -14,35 +14,27 @@ checks:
           scope: application
       kafka-units:
         allow_default:
-          scope: config
         gte:
-          scope: config
-          source: local
           value: 3
   kafka-exporter:
     charm: kafka-exporter
     assertions:
       site_url:
         isset:
-          scope: config
   mongo-exporter:
     charm: mongodb-exporter
     assertions:
       site_url:
         isset:
-          scope: config
       mongodb_uri:
         isset:
-          scope: config
   mysql-exporter:
     charm: mysqld-exporter
     assertions:
       site_url:
         isset:
-          scope: config
       mysql_uri:
         isset:
-          scope: config
   lcm:
     charm: lcm
     assertions:

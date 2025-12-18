@@ -376,6 +376,14 @@ sunbeam:
         ha:
           assert_ha:
             scope: application
+        global-physnet-mtu:
+          gte:
+            value: 9000
+            warn-on-fail: true
+            description: >-
+              While not a hard requirement, we currently recommend using Jumbo
+              frames for this setting so as to allow enough flexibility for
+              all neutron networks.
     nova-k8s:
       charm: nova-k8s
     octavia-k8s:

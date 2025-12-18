@@ -1,11 +1,21 @@
 # See README.md and 'ua-bundle-check.py --schema' for usage and schema details
 checks:
+  ceph-dashboard:
+    charm: ceph-dashboard
+  ceph-fs:
+    charm: ceph-fs
+    assertions:
+      ha:
+        assert_ha:
+          scope: application
   ceph-mon:
     charm: ceph-mon
     assertions:
       ha:
         assert_ha:
           scope: application
+  ceph-nfs:
+    charm: ceph-nfs
   ceph-osd:
     charm: ceph-osd
     assertions:
@@ -13,6 +23,8 @@ checks:
         allow_default:
         gte:
           value: 1G
+      tune-osd-memory-target:
+        isset:
   ceph-proxy:
     charm: ceph-proxy
     assertions:
@@ -23,3 +35,4 @@ checks:
         allow_default:
         eq:
           value: 3
+

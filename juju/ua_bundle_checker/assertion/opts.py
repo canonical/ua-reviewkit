@@ -90,3 +90,16 @@ class IsSetAssertionOpts(AssertionOptsCommon):
         super().__init__(data + [AssertionOpt('additional-info', str, None,
                          'Set to one of [local|bundle|master]'),
                          AssertionOpt('supersedes', str, None, '')])
+
+
+class AssertHAAssertionOpts(AssertionOptsCommon):
+    """ Assertion options for the AssertHA assertion. """
+
+    def __init__(self, data=None):
+        min_units = 3
+        if not data:
+            data = []
+
+        super().__init__(data + [AssertionOpt('min-units', int, min_units,
+                         'Minimum number of units the application must have. '
+                         f'Default is {min_units}')])

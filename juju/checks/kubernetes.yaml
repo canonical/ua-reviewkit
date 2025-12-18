@@ -1,105 +1,155 @@
 # See README.md and 'ua-bundle-check.py --schema' for usage and schema details
-checks:
-  kubernetes-control-plane:
-    charm: kubernetes-control-plane
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-      authorization-mode:
-        allow_default:
-          scope: config
-        eq:
-          scope: config
-          source: local
-          value: "RBAC,Node"
-  kubernetes-master:
-    charm: kubernetes-master
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-      authorization-mode:
-        allow_default:
-          scope: config
-        eq:
-          scope: config
-          source: local
-          value: "RBAC,Node"
-  kubeapi-load-balancer:
-    charm: kubeapi-load-balancer
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-  hacluster:
-    charm: hacluster
-    assertions:
-      cluster_count:
-        allow_default:
-          scope: config
-        gte:
-          scope: config
-          source: local
-          value: 3
-  etcd:
-    charm: etcd
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-  canal:
-    charm: canal
-    assertions:
-      cidr:
-        isset:
-          scope: config
-          source: bundle
-          value: ""
-  vault:
-    charm: vault
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-      channel:
-        allow_default:
-          scope: config
-        neq:
-          scope: config
-          source: local
-          value: stable
-          description: >-
-            The vault snap channel must not be set to "stable" as this
-            will result in whatever version of vault is available in
-            that channel being installed which will change over time
-            and may not be supported by the charm. Typically this
-            should be matched to the charm channel itself e.g. 1.7/stable.
-  mysql-percona:
-    charm: percona-cluster
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-      max-connections:
-        gte:
-          scope: config
-          source: local
-          value: 1000
-          description: >-
-            Openstack services will pool open connections so
-            this value must be high enough to accommodate your deployment.
-  mysql-innodb-cluster:
-    charm: mysql-innodb-cluster
-    assertions:
-      ha:
-        assert_ha:
-          scope: application
-      max-connections:
-        gte:
-          scope: config
-          source: local
-          value: 1000
-          description: >-
-            Openstack services will pool open connections so
-            this value must be high enough to accommodate your deployment.
+
+charmed-kubernetes:
+################################################################################
+# Charmed Kubernetes (group: charmed-kubernetes)
+# Description:
+#    this group contains checks for CharmedKubernetes charms. It is also the
+#    default group for this type. Canonical Kubernetes charms are covered by
+#    the canonical-kubernetes group (see help message for --type for
+#    information on how to select groups)
+################################################################################
+  checks:
+    calico:
+      charm: calico
+    canal:
+      charm: canal
+      assertions:
+        cidr:
+          isset:
+            scope: config
+            source: bundle
+            value: ""
+    ceph-csi:
+      charm: ceph-csi
+    cinder-csi:
+      charm: cinder-csi
+    containerd:
+      charm: containerd
+    easyrsa:
+      charm: easyrsa
+    etcd:
+      charm: etcd
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    hacluster:
+      charm: hacluster
+      assertions:
+        cluster_count:
+          allow_default:
+            scope: config
+          gte:
+            scope: config
+            source: local
+            value: 3
+    kubernetes-control-plane:
+      charm: kubernetes-control-plane
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+        authorization-mode:
+          allow_default:
+            scope: config
+          eq:
+            scope: config
+            source: local
+            value: "RBAC,Node"
+    kubernetes-worker:
+      charm: kubernetes-worker
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    kubeapi-load-balancer:
+      charm: kubeapi-load-balancer
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    mysql-innodb-cluster:
+      charm: mysql-innodb-cluster
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    mysql-router:
+      charm: mysql-router
+    openstack-cloud-controller:
+      charm: openstack-cloud-controller
+    openstack-integrator:
+      charm: openstack-integrator
+    vault:
+      charm: vault
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+        channel:
+          allow_default:
+            scope: config
+          neq:
+            scope: config
+            source: local
+            value: stable
+            description: >-
+              The vault snap channel must not be set to "stable" as this
+              will result in whatever version of vault is available in
+              that channel being installed which will change over time
+              and may not be supported by the charm. Typically this
+              should be matched to the charm channel itself e.g. 1.7/stable.
+
+canonical-kubernetes:
+################################################################################
+# Canonical Kubernetes
+################################################################################
+  checks:
+    calico:
+      charm: calico
+    ceph-csi:
+      charm: ceph-csi
+    cinder-csi:
+      charm: cinder-csi
+    containerd:
+      charm: containerd
+    etcd:
+      charm: etcd
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    easyrsa:
+      charm: easyrsa
+    k8s:
+      charm: k8s
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    k8s-worker:
+      charm: k8s-worker
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    mysql-k8s:
+      charm: mysql-k8s
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    mysql-router-k8s:
+      charm: mysql-router-k8s          
+    openstack-cloud-controller:
+      charm: openstack-cloud-controller
+    openstack-integrator:
+      charm: openstack-integrator
+    vault-k8s:
+      charm: vault-k8s
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+

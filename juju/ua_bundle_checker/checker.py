@@ -142,56 +142,79 @@ class UABundleChecker:
         else:
             results[result.rc_str] = [result]
 
-    def get_overrides_results(self, app_name):
+    def run_app_assertions(self, app, override_results=None,
+                           overrides_only=False):
         """
-        If the application has assertion methods that are overrides i.e. if
-        any one passes it supersedes all others, process those first and
-        mark them so that they don't get executed again.
+        Run assertions for an application.
+
+        @param name: application name
+        @param overrides_only: If the application has assertion methods that
+                               are overrides i.e. if
+                               any one passes it supersedes all others,
+                               process those first and mark them so that they
+                               don't get executed again.
+        @param override_results: dict of results indicating options that have
+                                 an override which we don't need to process
+                                 further.
         """
         override_methods = [method for method, runner in ASSERTIONS.items()
                             if runner.IS_OVERRIDE]
-        override_results = {}
+        results = {}
+
         for opt in self.params.assertions:
-            for method in override_methods:
-                if method in self.params.assertions[opt]:
-                    if opt not in override_results:
-                        override_results[opt] = {method: False}
+            if override_results and any(override_results.get(opt,
+                                                             {}).values()):
+                continue
 
-                    ctxt = AssertionContext(
-                                        app_name, opt, method,
-                                        self.params.assertions[opt][method])
-                    override_results[opt][method] = self.run(
-                                                        ctxt,
-                                                        allow_missing=True,
-                                                        ignore_fails=True)
+            assertions = self.params.assertions[opt]
+            if not assertions:
+                continue
 
-        return override_results
+            for method, settings in assertions.items():
+                if overrides_only and method not in override_methods:
+                    continue
+
+                if override_results and method in override_results.get(opt,
+                                                                       {}):
+                    continue
+
+                if opt not in results:
+                    results[opt] = {method: False}
+
+                if settings is None:
+                    settings = {}
+
+                context = AssertionContext(app, opt, method, settings)
+                if overrides_only:
+                    results[opt][method] = self.run(context,
+                                                    allow_missing=True,
+                                                    ignore_fails=True)
+                else:
+                    results[opt][method] = self.run(context)
+
+                if not results[opt][method] and not overrides_only:
+                    # stop at the first failure
+                    break
+
+        return results
 
     def run_assertions(self):
+        """ Run assertions for all applications. """
         if not self.has_charm_matches():
             return
 
         for app in self.applications:
             if not self.params.assertions:
-                self.add_result(app, CheckResult(CheckResult.FAIL,
+                self.add_result(app,
+                                CheckResult(CheckResult.FAIL,
                                             reason="no assertions defined"))
                 return
 
-            override_results = self.get_overrides_results(app)
-            for opt in self.params.assertions:
-                if any(override_results.get(opt, {}).values()):
-                    continue
-
-                for method in self.params.assertions[opt]:
-                    if method in override_results.get(opt, {}):
-                        continue
-
-                    context = AssertionContext(
-                                        app, opt, method,
-                                        self.params.assertions[opt][method])
-                    if not self.run(context):
-                        # stop at the first failure
-                        break
+            # First process overrides
+            override_results = self.run_app_assertions(app, None,
+                                                       overrides_only=True)
+            # Then the rest
+            self.run_app_assertions(app, override_results)
 
     def opt_exists(self, app_name, opt):
         return opt in self.params.bundle_apps[app_name].get('options', [])

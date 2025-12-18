@@ -34,10 +34,7 @@ charmed-openstack:
       assertions:
         bluestore-block-wal-size:
           allow_default:
-            scope: config
           gte:
-            scope: config
-            source: local
             value: 1G
     ceph-proxy:
       charm: ceph-proxy
@@ -46,10 +43,7 @@ charmed-openstack:
       assertions:
         ceph-osd-replication-count:
           allow_default:
-            scope: config
           eq:
-            scope: config
-            source: local
             value: 3
     cinder:
       charm: cinder
@@ -62,10 +56,7 @@ charmed-openstack:
       assertions:
         ceph-osd-replication-count:
           allow_default:
-            scope: config
           eq:
-            scope: config
-            source: local
             value: 3
     designate:
       charm: designate
@@ -87,10 +78,7 @@ charmed-openstack:
             scope: application
         ceph-osd-replication-count:
           allow_default:
-            scope: config
           eq:
-            scope: config
-            source: local
             value: 3
     gnocchi:
       charm: gnocchi
@@ -124,16 +112,12 @@ charmed-openstack:
             scope: application
         innodb-buffer-pool-size:
           gte:
-            scope: config
-            source: local
             value: 6G
             description: >-
               mysql must be allowed to cache a useful amount of data corresponding
               to the amount of memory available to the unit.
         max-connections:
           gte:
-            scope: config
-            source: local
             value: 2000
             description: >-
               Openstack services will pool open connections so this value must
@@ -146,16 +130,12 @@ charmed-openstack:
             scope: application
         innodb-buffer-pool-size:
           gte:
-            scope: config
-            source: local
             value: 6G
             description: >-
               mysql must be allowed to cache a useful amount of data corresponding
               to the amount of memory available to the unit.
         max-connections:
           gte:
-            scope: config
-            source: local
             value: 2000
             description: >-
               Openstack services will pool open connections so this value must
@@ -174,8 +154,6 @@ charmed-openstack:
             scope: application
         cluster-partition-handling:
           eq:
-            scope: config
-            source: local
             value: "pause_minority"
             description: >-
               We recommend using "pause-minority".
@@ -184,17 +162,13 @@ charmed-openstack:
       assertions:
         cluster_count:
           allow_default:
-            scope: config
           gte:
-            scope: config
-            source: local
             value: 3
     neutron-api-plugin-ovn:
       charm: neutron-api-plugin-ovn
       assertions:
         dns-servers:
           isset:
-            scope: config
             source: bundle
     neutron-api:
       charm: neutron-api
@@ -204,8 +178,6 @@ charmed-openstack:
             scope: application
         global-physnet-mtu:
           gte:
-            scope: config
-            source: local
             value: 9000
             warn-on-fail: true
             description: >-
@@ -230,17 +202,14 @@ charmed-openstack:
       assertions:
         vcpu-pin-set:
           allow_default:
-            scope: config
           skip_if_charm_exists:
             value: sysconfig
           eq:
-              scope: config
               source: master
               value: '.*kernel_opts:.+isolcpus=([0-9\-,]+).*'
               warn-on-fail: true
         cpu-models:
           isset:
-            scope: config
             source: bundle
             supersedes: cpu-model
             additional-info: >-
@@ -252,10 +221,8 @@ charmed-openstack:
               performing live-migrations.
         virt-type:
           allow_default:
-            scope: config
             source: bundle
           eq:
-            scope: config
             source: bundle
             value: "kvm"
             description: >-
@@ -263,20 +230,15 @@ charmed-openstack:
               left to the default.
         ephemeral-device:
           allow_default:
-            scope: config
             source: bundle
           exclusive_backing_dev:
-            scope: config
             source: bucketsconfig
             description: >-
               Ensure that nova instances path (if using bcache) is not backed by
               the same physical disk used for the rootfs.
         ceph-osd-replication-count:
           allow_default:
-            scope: config
           eq:
-            scope: config
-            source: local
             value: 3
     octavia:
       charm: octavia
@@ -312,8 +274,6 @@ charmed-openstack:
             value: latest/stable
         governor:
           eq:
-            scope: config
-            source: local
             value: "performance"
     vault:
       charm: vault
@@ -323,10 +283,7 @@ charmed-openstack:
             scope: application
         channel:
           allow_default:
-            scope: config
           neq:
-            scope: config
-            source: local
             value: stable
             description: >-
               The vault snap channel must not be set to "stable" as this

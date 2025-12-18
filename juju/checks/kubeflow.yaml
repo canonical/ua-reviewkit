@@ -1,0 +1,85 @@
+kubeflow:
+  checks:
+    admission-webhook:
+      charm: admission-webhook
+    argo-controller:
+      charm: argo-controller
+    dex-auth:
+      charm: dex-auth
+    envoy:
+      charm: envoy
+    grafana-agent-k8s:
+      charm: grafana-agent-k8s
+    istio-gateway:
+      charm: istio-gateway
+    istio-pilot:
+      charm: istio-pilot
+    jupyter-controller:
+      charm: jupyter-controller
+    jupyter-ui:
+      charm: jupyter-ui
+    katib-controller:      
+      charm: katib-controller
+    mysql-k8s:
+      charm: mysql-k8s
+      assertions:
+        ha:
+          assert_ha:
+            scope: application
+    katib-db-manager:
+      charm: katib-db-manager
+    katib-ui:
+      charm: katib-ui
+    kfp-api:
+      charm: kfp-api
+    kfp-metadata-writer:
+      charm: kfp-metadata-writer
+    kfp-persistence:
+         charm: kfp-persistence
+    kfp-profile-controller:
+      charm: kfp-profile-controller
+    kfp-schedwf:
+      charm: kfp-schedwf
+    kfp-ui:
+      charm: kfp-ui
+    kfp-viewer:
+      charm: kfp-viewer
+    kfp-viz:
+      charm: kfp-viz
+    knative-eventing:
+      charm: knative-eventing
+    knative-operator:
+      charm: knative-operator
+    knative-serving:
+      charm: knative-serving
+    kserve-controller:
+      charm: kserve-controller
+    kubeflow-dashboard:
+      charm: kubeflow-dashboard
+    kubeflow-profiles:
+      charm: kubeflow-profiles
+    kubeflow-roles:
+      charm: kubeflow-roles
+    kubeflow-volumes:
+      charm: kubeflow-volumes
+    metacontroller-operator:
+      charm: metacontroller-operator
+    minio:
+      charm: minio
+    mlflow-server:
+      charm: mlflow-server
+    mlmd:
+      charm: mlmd
+    oidc-gatekeeper:
+      charm: oidc-gatekeeper
+    pvcviewer-operator: 
+      charm: pvcviewer-operator
+    resource-dispatcher:
+      charm: resource-dispatcher
+    tensorboard-controller:
+      charm: tensorboard-controller
+    tensorboards-web-app:
+      charm: tensorboards-web-app
+    training-operator:
+      charm: training-operator
+

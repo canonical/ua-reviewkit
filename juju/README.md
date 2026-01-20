@@ -1,4 +1,6 @@
-# UA Juju Bundle Verification
+# UA Deployment Verification Tools
+
+## UA Juju Bundle Verification
 
 This tool takes as input a Juju bundle file and Foundation Cloud Engine
 deployment configuration and runs through the bundle applying checks e.g. to
@@ -14,7 +16,7 @@ add or modify checks it should generally only be necessary to modify the yaml
 but if a check requires a method that is not yet defined in the tool, that will
 need to be added to the AssertionHelpers class in ua-bundle-check.py.
 
-# Running the tool
+### Running the tool
 
 The first thing to do is decide what type of deployment you are testing. This
 can currently be one of "openstack", "kubernetes" or "osm" and those are set
@@ -45,3 +47,21 @@ your infrastructure.
 See --help for usage info.
 
 Results are logged in a file that can be used to share results.
+
+## UA HotSOS collector
+
+This tool collects hotsos information from a running juju deployment. It logs
+into the available machines, installs and runs the hotsos collect command.
+The results are then collected and stored in a tarball. After the collection,
+the tool will clean up any installed package from the machines.
+
+### Running the tool
+
+By default, the tool will collect hotsos from 1 unit for each application.
+Calling the tool without any parameters will in most cases be enough:
+
+```sh
+hotsos-collector.py
+```
+
+See --help for usage info and more options.

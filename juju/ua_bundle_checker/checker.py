@@ -20,6 +20,7 @@ import os
 import sys
 
 from dataclasses import dataclass
+from functools import cached_property
 
 import argparse
 import datetime
@@ -365,6 +366,7 @@ class ChecksManager:
     def __init__(self, checks_type):
         script_root = os.path.dirname(__file__)
         self.group = None
+        self.full_type = checks_type
         self.path = os.path.join(script_root, f'checks/{checks_type}.yaml')
         if not os.path.exists(self.path):
             self.checks_type, _, self.group = checks_type.partition(':')
@@ -381,7 +383,12 @@ class ChecksManager:
 
         return checks_sha
 
-    @property
+    @cached_property
+    def type(self):
+        self.checks  # pylint: disable=pointless-statement
+        return self.full_type
+
+    @cached_property
     def checks(self):
         """
         If 'checks' is the root key return everything beneath otherwise look
@@ -396,6 +403,9 @@ class ChecksManager:
                 return checks
 
             if self.group is None or self.group == group:
+                if not self.group:
+                    self.full_type = f"{self.full_type}:{group}"
+
                 return checks['checks']
 
         raise BundleCheckerError("no checks group found with name "
@@ -431,7 +441,7 @@ def setup(args):
 
     OutputManager(f"ua-bundle-checks.{checks_mgr.checks_type}.log",
                   not args.quiet).setup()
-    OUT.print(HEADER_TEMPLATE.format(datetime.datetime.now(), args.type,
+    OUT.print(HEADER_TEMPLATE.format(datetime.datetime.now(), checks_mgr.type,
                                      bundle, bundle_sha.hexdigest(),
                                      checks_mgr.hash.hexdigest()),
               stdout=True)
@@ -461,14 +471,16 @@ def setup(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--type', '-t', type=str,
-                        default='openstack',
-                        required=False,
-                        help=("Type of bundle (openstack, kubernetes etc). "
-                             "This name maps to a checks file under the "
-                             "checks directory. If the checks are split into "
-                             "more than one group, a group can be choses by "
-                             "adding a :<group> to the end of the type."))
+    parser.add_argument('--type', '-t', type=str, default='openstack',
+                        required=True,
+                        help=("The type of bundle we are checking. This name "
+                         "maps to a file under the 'checks' directory. Some "
+                         "checks support more than one variant of a product "
+                         "and so have more than one subgroup. To specify the "
+                         "group suffix the type name with a colon then the "
+                         "group name e.g. :<group>. If more than one group "
+                         "exists but none are specified, the first one found "
+                         "will be used."))
     parser.add_argument('--fce-config', type=str,
                         required=False, help="Path to FCE config.")
     parser.add_argument('--bundle', '-b', type=str,

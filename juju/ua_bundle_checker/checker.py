@@ -412,6 +412,15 @@ class ChecksManager:
                                  f"'{self.group}' in {self.path}")
 
 
+def get_bundle(bundle_blob):
+    """
+    Bundle files sometimes contain more than one document with overlays at the
+    end. We always assume the first document is the base bundle.
+    """
+    docs = yaml.safe_load_all(bundle_blob)
+    return list(docs)[0]
+
+
 def setup(args):
     if args.schema:
         LocalAssertionHelpers({}).show_schema()
@@ -454,7 +463,7 @@ def setup(args):
         sys.exit(1)
 
     try:
-        bundle_yaml = yaml.safe_load(bundle_blob)
+        bundle_yaml = get_bundle(bundle_blob)
     except ValueError as e:
         OUT.print(f"ERROR: Error parsing the bundle file: {e}")
         OUT.print("Please check the above errors and run again.")

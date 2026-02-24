@@ -338,7 +338,7 @@ class AssertionGTE(AssertionBase):
         ret = CheckResult(opt=charm_config_opt,
                           reason=f"value={current}")
         if current < expected:
-            ret.reason = f"value={current}, expected={expected}"
+            ret.reason = f"value='{current}', expected='{expected}'"
             if self.conf.description:
                 ret.reason = f"{ret.reason}: {self.conf.description}"
 
@@ -367,18 +367,25 @@ class AssertionNEQ(AssertionBase):
             current = 0
 
         current = self.atoi(current)
-        expected = self.atoi(self.conf.value)
+        expected = self.conf.value
         ret = CheckResult(opt=charm_config_opt,
                           reason=f"value={current}")
-        if current == expected:
-            ret.reason = f"value '{current}' is not valid"
-            if self.conf.description:
-                ret.reason = f"{ret.reason}: {self.conf.description}"
 
-            if self.conf.warn_on_fail:
-                ret.rc = CheckResult.WARN
-            else:
-                ret.rc = CheckResult.FAIL
+        if self.conf.regex:
+            if not re.fullmatch(expected.strip(), current):
+                return ret
+        else:
+            if current != self.atoi(expected):
+                return ret
+
+        ret.reason = f"value '{current}' is not valid"
+        if self.conf.description:
+            ret.reason = f"{ret.reason}: {self.conf.description}"
+
+        if self.conf.warn_on_fail:
+            ret.rc = CheckResult.WARN
+        else:
+            ret.rc = CheckResult.FAIL
 
         return ret
 
@@ -400,18 +407,24 @@ class AssertionEQ(AssertionBase):
             current = 0
 
         current = self.atoi(current)
-        expected = self.atoi(self.conf.value)
+        expected = self.conf.value
         ret = CheckResult(opt=charm_config_opt,
                           reason=f"value={current}")
-        if current != expected:
-            ret.reason = f"value={current}, expected={expected}"
-            if self.conf.description:
-                ret.reason = f"{ret.reason}: {self.conf.description}"
+        if self.conf.regex:
+            if re.fullmatch(expected.strip(), current):
+                return ret
+        else:
+            if current == self.atoi(expected):
+                return ret
 
-            if self.conf.warn_on_fail:
-                ret.rc = CheckResult.WARN
-            else:
-                ret.rc = CheckResult.FAIL
+        ret.reason = f"value='{current}', expected='{expected}'"
+        if self.conf.description:
+            ret.reason = f"{ret.reason}: {self.conf.description}"
+
+        if self.conf.warn_on_fail:
+            ret.rc = CheckResult.WARN
+        else:
+            ret.rc = CheckResult.FAIL
 
         return ret
 

@@ -74,6 +74,9 @@ class AssertionOptsCommon(AssertionOptsBase):
             AssertionOpt('warn-on-fail', bool, False,
                          'Set to True if you want a warning when assertion '
                          'fails (default is False)'),
+            AssertionOpt('regex', bool, False,
+                         ('If True the value will be treated as a regular '
+                          'expression.')),
             AssertionOpt('skip', bool, False, 'Set to True if you want to '
                          'skip this assertion'),
             AssertionOpt('description', str, None,

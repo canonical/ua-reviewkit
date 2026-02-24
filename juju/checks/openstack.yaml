@@ -324,6 +324,11 @@ sunbeam:
             scope: application
     cinder-volume:
       charm: cinder-volume
+      assertions:
+        snap-channel:
+          eq:
+            regex: true
+            value: '\S+/stable$'
     barbican-k8s:
       charm: barbican-k8s
       assertions:

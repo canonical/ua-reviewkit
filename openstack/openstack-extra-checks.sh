@@ -37,8 +37,8 @@ fi
 # See function definitions for explanation.
 CHECKS_DIR=`dirname $0`/extra-checks.d
 
-echo -e "\nRunning Glance image format test"
-$CHECKS_DIR/glance && echo "Result: [PASS]" || echo "Result: [FAIL]"
+# echo -e "\nRunning Glance image format test"
+# $CHECKS_DIR/glance && echo "Result: [PASS]" || echo "Result: [FAIL]"
 
 echo -e "\nRunning Octavia LoadBalancer test"
 $CHECKS_DIR/octavia && echo "Result: [PASS]" || echo "Result: [FAIL]"

@@ -22,7 +22,6 @@ import sys
 from dataclasses import dataclass
 from functools import cached_property
 
-import argparse
 import datetime
 import hashlib
 import re
@@ -363,15 +362,18 @@ class ChecksManager:
     type name e.g. <type>:<group>.
     """
 
-    def __init__(self, checks_type):
-        script_root = os.path.dirname(__file__)
+    def __init__(self, checks_type, checks_path):
         self.group = None
         self.full_type = checks_type
-        self.path = os.path.join(script_root, f'checks/{checks_type}.yaml')
+        if not os.path.isdir(checks_path):
+            raise BundleCheckerError(f"checks path '{checks_path}' not found "
+                                     "- please provide a valid path with "
+                                     "--checks-path")
+
+        self.path = os.path.join(checks_path, f'{checks_type}.yaml')
         if not os.path.exists(self.path):
             self.checks_type, _, self.group = checks_type.partition(':')
-            self.path = os.path.join(script_root,
-                                     f'checks/{self.checks_type}.yaml')
+            self.path = os.path.join(checks_path, f'{self.checks_type}.yaml')
         else:
             self.checks_type = checks_type
 
@@ -442,7 +444,7 @@ def setup(args):
         print("ERROR: one of --bundle or --fce-config is required")
         sys.exit(1)
 
-    checks_mgr = ChecksManager(args.type)
+    checks_mgr = ChecksManager(args.type, args.checks_path)
 
     bundle_sha = hashlib.sha1()
     with open(bundle, 'rb') as fd:
@@ -476,27 +478,3 @@ def setup(args):
         _bundle_apps = bundle_yaml['services']
 
     finish(run_checks(checks_mgr.checks, args, _bundle_apps))
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--type', '-t', type=str, default='openstack',
-                        required=True,
-                        help=("The type of bundle we are checking. This name "
-                         "maps to a file under the 'checks' directory. Some "
-                         "checks support more than one variant of a product "
-                         "and so have more than one subgroup. To specify the "
-                         "group suffix the type name with a colon then the "
-                         "group name e.g. :<group>. If more than one group "
-                         "exists but none are specified, the first one found "
-                         "will be used."))
-    parser.add_argument('--fce-config', type=str,
-                        required=False, help="Path to FCE config.")
-    parser.add_argument('--bundle', '-b', type=str,
-                        required=False, help="Path to alternate bundle. "
-                        "Default is to use $FCE_CONFIG/bundle.yaml")
-    parser.add_argument('--errors-only', action='store_true', default=False,
-                        help="Exclude [PASS] info.")
-    parser.add_argument('--quiet', '-q', action='store_true', default=False)
-    parser.add_argument('--schema', action='store_true', default=False)
-    setup(parser.parse_args())

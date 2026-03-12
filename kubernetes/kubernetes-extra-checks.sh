@@ -1,8 +1,8 @@
 #!/bin/bash -ex
 
-K8S_VERSION_FROM_CLUSTER=`kubectl version --short | grep -oP "Server Version: v\K.*"`
+K8S_VERSION_FROM_CLUSTER=`kubectl version | grep -oP "Server Version: v\K.*"`
 K8S_VERSION=${K8S_VERSION:-${K8S_VERSION_FROM_CLUSTER}}
-SONOBUOY_LATEST_VERSION=`curl https://github.com/vmware-tanzu/sonobuoy/releases/latest | grep -oP 'tag\/v\K.*(?=\")'`
+SONOBUOY_LATEST_VERSION=`curl -s https://api.github.com/repos/vmware-tanzu/sonobuoy/releases/latest | grep -oP 'tag\/v\K.*(?=\")'`
 SONOBUOY_VERSION=${SONOBUOY_VERSION:-${SONOBUOY_LATEST_VERSION}}
 SONOBUOY_PARALLEL=${SONOBUOY_PARALLEL:-30}
 SONOBUOY_MODE=${SONOBUOY_MODE:-non-disruptive-conformance}

@@ -113,9 +113,9 @@ class CheckResult:
     @property
     def rc_str_fmt(self):
         _map = {self.PASS: self._grn('PASS'),
-               self.WARN: self._ylw('WARN'),
-               self.SKIPPED: self._ylw('SKIPPED'),
-               self.FAIL: self._red('FAIL')}
+                self.WARN: self._ylw('WARN'),
+                self.SKIPPED: self._ylw('SKIPPED'),
+                self.FAIL: self._red('FAIL')}
         return _map[self.rc]
 
     def unformatted(self):

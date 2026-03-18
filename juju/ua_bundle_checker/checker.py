@@ -333,7 +333,7 @@ def run_checks(checks, args, bundle_apps):
         key = 'charm_channel'
         if (key not in assertions or
                 assertions[key].get(AssertionAssertChannel.NAME,
-                {}).get('scope') != 'application'):
+                                    {}).get('scope') != 'application'):
             assertions[key] = {AssertionAssertChannel.NAME: {
                                         'scope': 'application'}}
 

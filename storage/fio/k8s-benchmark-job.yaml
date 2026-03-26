@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fio-target-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  # storageClassName: your-ceph-storage-class
+  resources:
+    requests:
+      storage: 64Gi
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fio-benchmark
+spec:
+  template:
+    spec:
+      containers:
+      - name: fio
+        image: ubuntu:noble
+        workingDir: /data
+        command: ["/bin/bash", "-c"]
+        args:
+          - |
+            apt-get update && apt-get install -y fio
+            mkdir -p conf
+            cp /config/*.template conf/
+            cp /config/run-tests.sh .
+            chmod +x run-tests.sh
+            ./run-tests.sh --name mytest --job all --class all --yes
+            echo "Tests finished. Sleeping for data retrieval..."
+            sleep infinity
+        volumeMounts:
+        - name: fio-storage
+          mountPath: /data
+        - name: config-vol
+          mountPath: /config
+      volumes:
+      - name: fio-storage
+        persistentVolumeClaim:
+          claimName: fio-target-pvc
+      - name: config-vol
+        configMap:
+          name: fio-config
+      restartPolicy: Never

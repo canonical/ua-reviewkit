@@ -22,8 +22,8 @@ from ua_bundle_checker.checker import setup
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--type', '-t', type=str, default='openstack',
-                        required=True,
+    parser.add_argument('--type', '-t', type=str, default=None,
+                        required=False,
                         help=("The type of bundle we are checking. This name "
                          "maps to a file under the 'checks' directory. Some "
                          "checks support more than one variant of a product "
@@ -31,7 +31,8 @@ if __name__ == "__main__":
                          "group suffix the type name with a colon then the "
                          "group name e.g. :<group>. If more than one group "
                          "exists but none are specified, the first one found "
-                         "will be used."))
+                         "will be used. If not provided, a generic check "
+                         "covering all charms in the bundle is performed."))
     parser.add_argument('--fce-config', type=str,
                         required=False, help="Path to FCE config.")
     parser.add_argument('--bundle', '-b', type=str,

@@ -423,6 +423,16 @@ def get_bundle(bundle_blob):
     return list(docs)[0]
 
 
+def _get_checks_info(checks_mgr):
+    """Return (log_type, header_type, assertions_hash, checks) from an
+    optional ChecksManager. Falls back to generic values when None."""
+    if checks_mgr is None:
+        return "generic", "generic", "N/A", {"all": {"charm": ".*"}}
+
+    return (checks_mgr.checks_type, checks_mgr.type,
+            checks_mgr.hash.hexdigest(), checks_mgr.checks)
+
+
 def setup(args):
     if args.schema:
         LocalAssertionHelpers({}).show_schema()
@@ -444,17 +454,21 @@ def setup(args):
         print("ERROR: one of --bundle or --fce-config is required")
         sys.exit(1)
 
-    checks_mgr = ChecksManager(args.type, args.checks_path)
+    checks_mgr = None
+    if args.type is not None:
+        checks_mgr = ChecksManager(args.type, args.checks_path)
+
+    log_type, header_type, hash_str, checks = _get_checks_info(checks_mgr)
 
     bundle_sha = hashlib.sha1()
     with open(bundle, 'rb') as fd:
         bundle_sha.update(fd.read())
 
-    OutputManager(f"ua-bundle-checks.{checks_mgr.checks_type}.log",
+    OutputManager(f"ua-bundle-checks.{log_type}.log",
                   not args.quiet).setup()
-    OUT.print(HEADER_TEMPLATE.format(datetime.datetime.now(), checks_mgr.type,
+    OUT.print(HEADER_TEMPLATE.format(datetime.datetime.now(), header_type,
                                      bundle, bundle_sha.hexdigest(),
-                                     checks_mgr.hash.hexdigest()),
+                                     hash_str),
               stdout=True)
 
     try:
@@ -477,4 +491,4 @@ def setup(args):
         # legacy juju fallback
         _bundle_apps = bundle_yaml['services']
 
-    finish(run_checks(checks_mgr.checks, args, _bundle_apps))
+    finish(run_checks(checks, args, _bundle_apps))

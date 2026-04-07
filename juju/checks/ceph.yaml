@@ -24,7 +24,9 @@ checks:
         gte:
           value: 1G
       tune-osd-memory-target:
-        isset:
+        allow_default:
+        gte:
+          value: 4G
   ceph-proxy:
     charm: ceph-proxy
     assertions:

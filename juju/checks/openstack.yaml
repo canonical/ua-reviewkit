@@ -221,9 +221,7 @@ charmed-openstack:
               performing live-migrations.
         virt-type:
           allow_default:
-            source: bundle
           eq:
-            source: bundle
             value: "kvm"
             description: >-
               For production environments 'virt-type' must be set to 'kvm' or

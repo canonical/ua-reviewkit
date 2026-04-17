@@ -23,6 +23,7 @@ from functools import cached_property
 
 import yaml
 
+from ua_bundle_checker.exceptions import BundleCheckerError
 from ua_bundle_checker.assertion.opts import (
     AssertionOptsCommon,
     AssertHAAssertionOpts,
@@ -148,6 +149,17 @@ class AssertionBase:
                 if opt.name == name:
                     opt.value = value
                     break
+
+        source = settings.get('source', 'local')
+        if source == "local":
+            self.conf.value = settings.get('value')
+        elif source == "bundle":
+            # value is ignored, ensure that settings is non-null
+            # only supported by isset() currently
+            self.conf.value = None
+        else:
+            raise BundleCheckerError("Unknown assertion data source "
+                                     f"'{source}'")
 
     @cached_property
     def conf(self):

@@ -204,10 +204,6 @@ charmed-openstack:
           allow_default:
           skip_if_charm_exists:
             value: sysconfig
-          eq:
-              source: master
-              value: '.*kernel_opts:.+isolcpus=([0-9\-,]+).*'
-              warn-on-fail: true
         cpu-models:
           isset:
             source: bundle
@@ -221,7 +217,9 @@ charmed-openstack:
               performing live-migrations.
         virt-type:
           allow_default:
+            source: bundle
           eq:
+            source: bundle
             value: "kvm"
             description: >-
               For production environments 'virt-type' must be set to 'kvm' or
@@ -229,11 +227,6 @@ charmed-openstack:
         ephemeral-device:
           allow_default:
             source: bundle
-          exclusive_backing_dev:
-            source: bucketsconfig
-            description: >-
-              Ensure that nova instances path (if using bcache) is not backed by
-              the same physical disk used for the rootfs.
         ceph-osd-replication-count:
           allow_default:
           eq:

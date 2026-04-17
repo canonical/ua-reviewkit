@@ -27,6 +27,7 @@ import hashlib
 import re
 import yaml
 
+from ua_bundle_checker.exceptions import BundleCheckerError
 from ua_bundle_checker.assertion.commands import (
     AssertionAssertChannel,
     CheckResult,
@@ -45,10 +46,6 @@ UA Juju bundle config verification
 """ + "=" * 80
 
 OUT = None
-
-
-class BundleCheckerError(Exception):
-    """ Raised when an error occurs while checking a bundle. """
 
 
 class OutputManager:
@@ -161,6 +158,7 @@ class UABundleChecker:
                             if runner.IS_OVERRIDE]
         results = {}
 
+        print(f"############## app={app}")
         for opt in self.params.assertions:
             if override_results and any(override_results.get(opt,
                                                              {}).values()):
@@ -170,7 +168,9 @@ class UABundleChecker:
             if not assertions:
                 continue
 
+            print(f"#### opt={opt}")
             for method, settings in assertions.items():
+                print(f"### method={method} settings={settings}")
                 if overrides_only and method not in override_methods:
                     continue
 
@@ -196,6 +196,7 @@ class UABundleChecker:
                     # stop at the first failure
                     break
 
+        print(f"# results={results}")
         return results
 
     def run_assertions(self):
@@ -238,40 +239,6 @@ class UABundleChecker:
                                  reason="not found")
             self.add_result(context.application, result)
             return result.passed
-
-        assertion_source = context.settings.get('source', 'local')
-        if assertion_source == "local":
-            assertion.conf.value = context.settings.get('value')
-        elif assertion_source == "master":  # config/master.yaml
-            if not self.params.fce_config:
-                reason = "fce config not available - skipping"
-                result = CheckResult(CheckResult.WARN, opt=context.opt,
-                                     reason=reason)
-                self.add_result(context.application, result)
-                return result.passed
-
-            # assertion["value"] must be python re compatible matching one
-            # substring.
-            result = assertion(context.opt, application)
-            self.add_result(context.application, result)
-            return result.passed
-        elif assertion_source == "bucketsconfig":  # bucketsconfig.yaml
-            if not self.params.fce_config:
-                reason = "fce config not available - skipping"
-                result = CheckResult(CheckResult.WARN, opt=context.opt,
-                                     reason=reason)
-                self.add_result(context.application, result)
-                return result.passed
-
-            assertion.conf.value = os.path.join(self.params.fce_config,
-                                                "bucketsconfig.yaml")
-        elif assertion_source == "bundle":
-            # value is ignored, ensure that settings is non-null
-            # only supported by isset() currently
-            assertion.conf.value = None
-        else:
-            raise BundleCheckerError("Unknown assertion data source "
-                                     f"'{assertion_source}'")
 
         result = assertion(context.opt, application)
         if result.passed or not ignore_fails:

@@ -17,6 +17,26 @@ Or all tests with:
 
 The output is collected as a tarball.
 
+# Summarize results
+
+You can generate a summary of the results using:
+
+Replace 'mytest-xxxx' with the name of your test results directory. 
+
+```bash
+./analyse-results.sh mytest-xxxx/mytest-xxxx.log>
+```
+
+The output will be printed in below format. 
+
+| TEST     |  JOB     |  RW      |   AVG_LATENCY |    BANDWIDTH       |     IOPS |     
+| ---------- | ---------- | ---------- | --------------- | -------------------- | ----------
+| mytest   |  4k      |   READ   |    xxxx.xx us |     xx.xMiB/s      |      xx.xx|     
+| mytest   |  4m      |   READ   |    xxx.xx ms  |     xxxMiB/s       |      xx   |    
+| mytest   |  etcd    |   READ   |    xxxx.xx us |     xxxKiB/s       |      xxx  |     
+| mytest   |  4k      |   READ   |    xxxxx.xx us|     xxxxKiB/s      |      xxx  |
+|||\<table | truncated>     
+
 ## Running tests on Kubernetes
 
 ### Prerequisites
@@ -53,6 +73,8 @@ kubectl get pods -l job-name=fio-benchmark -w
 
 # Follow the test output
 kubectl logs -f job/fio-benchmark
+
+#Summary output will be logged after test is finished. 
 ```
 
 ### Retrieve results

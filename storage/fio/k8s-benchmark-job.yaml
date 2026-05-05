@@ -33,7 +33,7 @@ spec:
             chmod +x analyse-results.sh
             ./run-tests.sh --name mytest --job all --class all --yes
             echo "Tests finished. Sleeping for data retrieval..."
-            ls -rt | grep mytest | head -n 1| xargs -I {} ./analyse-results.sh {}/{}.log
+            ls -rt | grep mytest | grep -v '.tgz' | tail -n 1| xargs -I {} ./analyse-results.sh {}/{}.log
             sleep infinity
         volumeMounts:
         - name: fio-storage

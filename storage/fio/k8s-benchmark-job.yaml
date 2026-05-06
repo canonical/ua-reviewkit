@@ -28,9 +28,12 @@ spec:
             mkdir -p conf
             cp /config/*.template conf/
             cp /config/run-tests.sh .
+            cp /config/analyse-results.sh .
             chmod +x run-tests.sh
+            chmod +x analyse-results.sh
             ./run-tests.sh --name mytest --job all --class all --yes
             echo "Tests finished. Sleeping for data retrieval..."
+            ls -rt | grep mytest | grep -v '.tgz' | tail -n 1| xargs -I {} ./analyse-results.sh {}/{}.log
             sleep infinity
         volumeMounts:
         - name: fio-storage

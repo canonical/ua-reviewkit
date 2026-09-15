@@ -419,6 +419,13 @@ sunbeam:
       charm: self-signed-certificates
     traefik-k8s:
       charm: traefik-k8s
+      assertions:
+          # traefik charm is shipped in the latest/stable channel and has no
+          # release track channels so we override the default check to allow
+          # latest/stable.
+          assert_channel:
+            scope: application
+            value: latest/stable
     vault-k8s:
       charm: vault-k8s
     watcher-k8s:

@@ -242,12 +242,12 @@ for class in ${TEST_CLASSES[@]}; do
             cd $results_dir/$jobdir
             if $OPT_DRY_RUN; then
                 echo "## DRY-RUN ##"
-                echo "fio $config --write_lat_log=$joblabel --write_bw_log=$joblabel --write_iops_log=$joblabel"
+                echo "fio $config --write_lat_log=$joblabel --write_bw_log=$joblabel --write_iops_log=$joblabel --output-format=normal,json | awk -v json_file=\"$joblabel.json\" '/^\\{/ { json_output=1 } json_output { print > json_file; next } { print } END { close(json_file) }'"
                 # delete io file to avoid running out of space for subsequent runs.
             else
                 $FORCE_YES || read -p "Run test? [Y/n]" answer
                 if [ -z "$answer" ] || [ "${answer,,}" = "y" ]; then
-                    fio $config --write_lat_log=$joblabel --write_bw_log=$joblabel --write_iops_log=$joblabel
+                    fio $config --write_lat_log=$joblabel --write_bw_log=$joblabel --write_iops_log=$joblabel --output-format=normal,json | awk -v json_file="$joblabel.json" '/^\{/ { json_output=1 } json_output { print > json_file; next } { print } END { close(json_file) }'
                 else
                     echo -e "\n# Test Not Run #"
                 fi

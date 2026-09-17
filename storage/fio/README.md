@@ -15,7 +15,9 @@ Or all tests with:
 
 ./run-tests.sh --name mytest --job all --class all --yes
 
-The output is collected as a tarball.
+The output is collected as a tarball. Each test job directory contains the
+existing fio text output in the aggregate log and a JSON result file named
+`<class>-<job>.json`.
 
 # Summarize results
 

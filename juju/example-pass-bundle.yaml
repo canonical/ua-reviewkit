@@ -12,6 +12,7 @@ applications:
     channel: zed/stable
     num_units: 1
     options:
+      virt-type: kvm
       cpu-model: Skylake-Server-IBRS
   rabbitmq-server:
     charm: ch:rabbitmq-server

@@ -64,19 +64,22 @@ class AssertionOptsCommon(AssertionOptsBase):
 
         super().__init__(data + [
             AssertionOpt('source', str, None,
-                         'Set to one of [local|bundle|master]'),
+                         'Set to one of [local|bundle]. If source is set to '
+                         'local the value compared will be the one from the '
+                         'assertion definition otherwise if set to bundle the '
+                         'will be taken from the bundle.'),
             AssertionOpt('scope', str, None,
-                         'Set to one of [config|application]'),
+                         'Defines whether or not the assertion applies to an '
+                         'entire charm application or just one of its config '
+                         'options. Set to one of [config|application]'),
             AssertionOpt('value', str, None,
-                         ('Value we are checking against. Note that if '
-                          'source=master this must be regex with '
-                          'single substring match')),
+                         'Value we are checking against.'),
             AssertionOpt('warn-on-fail', bool, False,
                          'Set to True if you want a warning when assertion '
                          'fails (default is False)'),
             AssertionOpt('regex', bool, False,
-                         ('If True the value will be treated as a regular '
-                          'expression.')),
+                         'If True the value will be treated as a regular '
+                         'expression.'),
             AssertionOpt('skip', bool, False, 'Set to True if you want to '
                          'skip this assertion'),
             AssertionOpt('description', str, None,
@@ -91,8 +94,17 @@ class IsSetAssertionOpts(AssertionOptsCommon):
             data = []
 
         super().__init__(data + [AssertionOpt('additional-info', str, None,
-                                 'Set to one of [local|bundle|master]'),
-                                 AssertionOpt('supersedes', str, None, '')])
+                                              'When the assertion is run the '
+                                              'output can optionally contain '
+                                              'additional information as '
+                                              'provided by this option.'),
+                                 AssertionOpt('supersedes', str, None,
+                                              'If a charm config option has '
+                                              'been deprecated this can be '
+                                              'used to define assertions for '
+                                              'both but indicate that the '
+                                              'deprecated option has be '
+                                              'switched to the newer one.')])
 
 
 class AssertHAAssertionOpts(AssertionOptsCommon):
